@@ -30,22 +30,20 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 
-// --- 本機儲存 ---
-function load() {
-  const raw = localStorage.getItem(STORE_KEY);
-  if (raw) {
-    try { Object.assign(state, JSON.parse(raw)); }
-    catch (e) { console.warn(e); }
-  } else {
-    seed();  // 沒資料就產生範例
-    save();
-  }
-}
-
+// --- LocalStorage 儲存 ---
 function save() {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 }
 
+function load() {
+  const str = localStorage.getItem(STORE_KEY);
+  if (str) {
+    Object.assign(state, JSON.parse(str));
+  } else {
+    seed();
+    save();
+  }
+}
 
 // --- 建立範例資料 ---
 function seed() {
@@ -129,7 +127,7 @@ function getMonthData(ym) {
 }
 
 
-// --- 各區塊渲染 (摘要 / 表格 / 預算 / 圖表 / 目標) ---
+// --- 各區塊渲染 ---
 function renderSummary() {
   const now = new Date();
   const ym = now.toISOString().slice(0, 7);
@@ -225,10 +223,8 @@ function renderChart() {
     dataE.push(m.expense);
   }
 
-  // 清空畫布
   ctx.clearRect(0, 0, cvs.width, cvs.height);
 
-  // 繪製軸線
   const padL = 40, padB = 24, padT = 10, padR = 10;
   const W = cvs.width - padL - padR, H = cvs.height - padT - padB;
   ctx.save();
@@ -241,7 +237,6 @@ function renderChart() {
   ctx.fillStyle = 'rgba(255,255,255,.6)';
   ctx.font = '12px system-ui';
 
-  // Y軸格線 + 標籤
   for (let i = 0; i <= 5; i++) {
     const y = H - (H * (i / 5));
     ctx.beginPath();
@@ -251,7 +246,6 @@ function renderChart() {
     ctx.fillText((yStep * i / 1000).toFixed(0) + 'k', -34, y + 4);
   }
 
-  // 繪製長條圖
   const n = labels.length;
   const bw = W / (n * 2);
 
@@ -260,16 +254,13 @@ function renderChart() {
     const hI = H * (dataI[i] / max);
     const hE = H * (dataE[i] / max);
 
-    // 收入 (淺藍)
     ctx.fillStyle = '#8fd3ff';
     ctx.fillRect(x, H - hI, bw, hI);
 
-    // 支出 (深藍)
     ctx.fillStyle = '#6aa2ff';
     ctx.fillRect(x + bw + 2, H - hE, bw, hE);
   }
 
-  // X軸標籤
   ctx.fillStyle = 'rgba(255,255,255,.6)';
   for (let i = 0; i < n; i += (n > 8 ? 2 : 1)) {
     const x = i * (W / n) + 6;
@@ -316,46 +307,9 @@ function saveTransactionToServer(tx) {
     .then(res => res.json())
     .then(data => {
       console.log("已儲存到資料庫：", data);
-      loadTransactionsFromServer(); // 儲存後重新載入
+      loadTransactionsFromServer();
     })
     .catch(err => console.error("儲存失敗", err));
-}
-
-// 掃描 QRCode → 建立交易
-function onScanSuccess(decodedText) {
-  let tx = {
-    date: new Date(),
-    type: "expense",
-    amount: 0,
-    category: "其他",
-    note: "",
-  };
-
-  try {
-    // 如果掃到 JSON 格式
-    const data = JSON.parse(decodedText);
-    tx.amount = data.expense;
-    tx.category = data.category;
-    tx.note = data.note || "";
-  } catch (e) {
-    // 如果是一般文字 (例如發票號碼)
-    const match = decodedText.match(/(\d{2,6})/);
-    if (match) {
-      tx.amount = parseInt(match[1]);
-      tx.category = "餐飲";
-      tx.note = "掃描發票";
-    }
-  }
-
-  if (tx.amount > 0) {
-    saveTransactionToServer(tx);
-  }
-
-  // 停止掃描
-  qrScanner.stop().then(() => {
-    $("#qr-reader").style.display = "none";
-    $("#switch-camera-btn").style.display = "none";
-  });
 }
 
 // 從後端載入交易
@@ -364,14 +318,16 @@ function loadTransactionsFromServer() {
     .then(res => res.json())
     .then(data => {
       console.log("資料庫交易紀錄：", data);
-      // TODO: 把資料同步到前端 state 並渲染
-    });
+      state.tx = data;
+      save();
+      render();
+    })
+    .catch(err => console.error("讀取失敗", err));
 }
 
 
 // --- 使用者操作事件 ---
 document.addEventListener('click', (e) => {
-  // 刪除交易
   const del = e.target.getAttribute('data-del');
   if (del) {
     state.tx = state.tx.filter(t => t.id !== del);
@@ -379,7 +335,6 @@ document.addEventListener('click', (e) => {
     render();
   }
 
-  // 儲蓄目標存入
   const saveG = e.target.getAttribute('data-save');
   if (saveG) {
     const input = document.querySelector(`[data-addsave="${saveG}"]`);
@@ -393,7 +348,6 @@ document.addEventListener('click', (e) => {
     }
   }
 
-  // 刪除目標
   const delG = e.target.getAttribute('data-delgoal');
   if (delG) {
     state.goals = state.goals.filter(g => g.id !== delG);
@@ -412,7 +366,10 @@ $('#addBtn').addEventListener('click', () => {
 
   if (!amount || amount <= 0) return alert('請輸入有效金額');
 
-  state.tx.push({ id: uid(), date, type, amount, category, note });
+  const tx = { id: uid(), date, type, amount, category, note };
+  state.tx.push(tx);
+  saveTransactionToServer(tx);
+
   $('#txAmount').value = '';
   $('#txNote').value = '';
   save();
@@ -434,7 +391,7 @@ $('#setBudget').addEventListener('click', () => {
   renderBudgets();
   $('#budgetCat').value = '';
   $('#budgetAmt').value = '';
-});
+}); 
 
 // 新增目標
 $('#addGoal').addEventListener('click', () => {
@@ -477,24 +434,24 @@ $('#fileInput').addEventListener('change', (e) => {
 });
 
 
-// 重置所有資料
-$('#resetBtn').addEventListener('click', () => {
-  if (confirm('確定要清空所有資料嗎？')) {
-    // 清空狀態
+// Reset 功能
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("確定要清空所有資料嗎？此操作無法復原！")) {
+    localStorage.removeItem(STORE_KEY);
     state.tx = [];
     state.budgets = {};
-    state.goals = [];
-    // 存入 localStorage
+    state.goals = {};
     save();
-    // 重新渲染畫面
     render();
-    alert('所有資料已清空！');
+
+    const ctx = document.getElementById("chart").getContext("2d");
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    alert("所有資料已清空！");
   }
 });
 
 
 // --- 初始化 ---
-// 載入資料並渲染畫面
 load();
 render();
-
