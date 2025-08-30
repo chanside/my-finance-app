@@ -210,6 +210,13 @@ $('#addBtn').addEventListener('click',()=>{
   save(); render();
 });
 
+async function loadTransactions() {
+    const res = await fetch("https://my-backend.onrender.com/api/transactions");
+    const data = await res.json();
+    console.log(data);
+  }
+
+  loadTransactions();
 // 篩選
 $('#q').addEventListener('input',renderTable);
 $('#fType').addEventListener('change',renderTable);
