@@ -71,8 +71,13 @@ function renderSummary() {
   const bal = m.income - m.expense;
   $('#balance').textContent = fmt(bal);
   $('#balanceNote').textContent = `${ym} 的結餘`;
-  const rate = m.income ? Math.round((bal/m.income)*100) : 0;
-  $('#savingRate').textContent = (rate<0?0:rate) + '%';
+  // 可支配收入
+  const disposableIncome = m.income;
+  // 儲蓄金額 = 收入 - 支出
+  const savingAmount = bal;
+  // 儲蓄率
+  const rate = disposableIncome ? Math.round((savingAmount / disposableIncome) * 100) : 0;
+  $('#savingRate').textContent = (rate < 0 ? 0 : rate) + '%';
 }
 
 function renderTable() {
@@ -211,10 +216,24 @@ $('#addBtn').addEventListener('click',()=>{
 });
 
 async function loadTransactions() {
+  try {
     const res = await fetch("https://my-backend.onrender.com/api/transactions");
     const data = await res.json();
-    console.log(data);
+    console.log("從後端抓到資料:", data);
+    state.tx = data.map(t => ({
+      id: t._id, // 用 MongoDB 的 id
+      date: t.date.slice(0,10),
+      type: t.type,
+      amount: t.amount,
+      category: t.category || '',
+      note: t.note || ''
+    }));
+    render();
+  } catch (err) {
+    console.error("抓取交易紀錄失敗:", err);
   }
+}
+
 
   loadTransactions();
 // 篩選

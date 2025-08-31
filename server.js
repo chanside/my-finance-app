@@ -29,8 +29,10 @@ mongoose
 
 // 定義 Schema
 const transactionSchema = new mongoose.Schema({
-  type: String,
-  amount: Number,
+  type: { type: String, required: true },   // 收入 or 支出
+  amount: { type: Number, required: true },
+  category: { type: String },               // 類別（餐飲、交通…）
+  note: { type: String },                   // 備註
   date: { type: Date, default: Date.now }
 });
 const Transaction = mongoose.model("Transaction", transactionSchema);
