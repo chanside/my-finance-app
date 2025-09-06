@@ -4,11 +4,11 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ⭐ 先定義 __dirname
+// ⭐ 定義 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ⭐ dotenv 要用絕對路徑，這樣一定會讀到
+// ⭐ dotenv 要用絕對路徑
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 console.log("✅ Loaded Mongo URI:", process.env.MONGODB_URI ? "OK" : "NOT FOUND");
 
@@ -18,9 +18,6 @@ const PORT = process.env.PORT || 3000;
 // 解析 JSON
 app.use(express.json());
 
-// 靜態檔案 (這裡先用 __dirname，因為你的 index.html 在根目錄)
-app.use(express.static(__dirname));
-
 // MongoDB 連線
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -29,10 +26,10 @@ mongoose
 
 // 定義 Schema
 const transactionSchema = new mongoose.Schema({
-  type: { type: String, required: true },   // 收入 or 支出
+  type: { type: String, enum: ["income", "expense"], required: true },
   amount: { type: Number, required: true },
-  category: { type: String },               // 類別（餐飲、交通…）
-  note: { type: String },                   // 備註
+  category: { type: String },
+  note: { type: String },
   date: { type: Date, default: Date.now }
 });
 const Transaction = mongoose.model("Transaction", transactionSchema);
@@ -45,17 +42,29 @@ app.get("/api/transactions", async (req, res) => {
 
 // API：新增交易紀錄
 app.post("/api/transactions", async (req, res) => {
+  console.log("📩 收到交易:", req.body); // debug
   const transaction = new Transaction(req.body);
   await transaction.save();
   res.status(201).json(transaction);
 });
 
-// 把 / 導向到 index.html
+// API：刪除交易紀錄
+app.delete("/api/transactions/:id", async (req, res) => {
+  try {
+    await Transaction.findByIdAndDelete(req.params.id);
+    res.sendStatus(204);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.use(express.static(path.join(__dirname, "../public")));
+
+// 預設首頁
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// 啟動伺服器（只留這一個）
+// 啟動伺服器
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
