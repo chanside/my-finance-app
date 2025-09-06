@@ -4,11 +4,11 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ⭐ 定義 __dirname
+// ⭐ 先定義 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ⭐ dotenv 要用絕對路徑
+// ⭐ dotenv 要用絕對路徑，這樣一定會讀到
 dotenv.config({ path: path.resolve(__dirname, ".env") });
 console.log("✅ Loaded Mongo URI:", process.env.MONGODB_URI ? "OK" : "NOT FOUND");
 
@@ -18,8 +18,8 @@ const PORT = process.env.PORT || 3000;
 // 解析 JSON
 app.use(express.json());
 
-// 靜態檔案 (公開 public 資料夾)
-app.use(express.static(path.join(__dirname, "../public")));
+// 靜態檔案 (這裡先用 __dirname，因為你的 index.html 在根目錄)
+app.use(express.static(__dirname));
 
 // MongoDB 連線
 mongoose
@@ -29,10 +29,10 @@ mongoose
 
 // 定義 Schema
 const transactionSchema = new mongoose.Schema({
-  type: { type: String, enum: ["income", "expense"], required: true },
+  type: { type: String, required: true },   // 收入 or 支出
   amount: { type: Number, required: true },
-  category: { type: String },
-  note: { type: String },
+  category: { type: String },               // 類別（餐飲、交通…）
+  note: { type: String },                   // 備註
   date: { type: Date, default: Date.now }
 });
 const Transaction = mongoose.model("Transaction", transactionSchema);
@@ -50,22 +50,12 @@ app.post("/api/transactions", async (req, res) => {
   res.status(201).json(transaction);
 });
 
-// API：刪除交易紀錄
-app.delete("/api/transactions/:id", async (req, res) => {
-  try {
-    await Transaction.findByIdAndDelete(req.params.id);
-    res.sendStatus(204);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 預設首頁
+// 把 / 導向到 index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 啟動伺服器
+// 啟動伺服器（只留這一個）
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
