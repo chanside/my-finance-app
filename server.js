@@ -18,6 +18,9 @@ const PORT = process.env.PORT || 3000;
 // 解析 JSON
 app.use(express.json());
 
+// 靜態檔案 (公開 public 資料夾)
+app.use(express.static(path.join(__dirname, "../public")));
+
 // MongoDB 連線
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -42,7 +45,6 @@ app.get("/api/transactions", async (req, res) => {
 
 // API：新增交易紀錄
 app.post("/api/transactions", async (req, res) => {
-  console.log("📩 收到交易:", req.body); // debug
   const transaction = new Transaction(req.body);
   await transaction.save();
   res.status(201).json(transaction);
@@ -57,11 +59,10 @@ app.delete("/api/transactions/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.use(express.static(path.join(__dirname, "../public")));
 
 // 預設首頁
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
 // 啟動伺服器
