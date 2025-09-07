@@ -203,35 +203,63 @@ document.addEventListener('click', e=>{
 });
 
 // 新增交易
-$('#addBtn').addEventListener('click',()=>{
-  const date=$('#txDate').value||todayStr();
-  const type=$('#txType').value;
-  const amount=Number($('#txAmount').value);
-  const category=$('#txCategory').value||(type==='income'?'其他收入':'其他支出');
-  const note=$('#txNote').value||'';
-  if(!amount||amount<=0) return alert('請輸入有效金額');
-  state.tx.push({id:uid(),date,type,amount,category,note});
-  $('#txAmount').value=''; $('#txNote').value='';
-  save(); render();
+$('#addBtn').addEventListener('click', async () => {
+  const date = $('#txDate').value || todayStr();
+  const type = $('#txType').value;
+  const amount = Number($('#txAmount').value);
+  const category = $('#txCategory').value || (type === 'income' ? '其他收入' : '其他支出');
+  const note = $('#txNote').value || '';
+
+  if (!amount || amount <= 0) return alert('請輸入有效金額');
+
+  const newTx = { date, type, amount, category, note };
+
+  try {
+    // 🔥 把資料送去後端
+    const res = await fetch("https://my-backend.onrender.com/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTx)
+    });
+
+    const savedTx = await res.json();
+    console.log("✅ 已寫入 MongoDB:", savedTx);
+
+    // 更新前端顯示
+    state.tx.push(savedTx);
+    save();
+    render();
+
+    $('#txAmount').value = '';
+    $('#txNote').value = '';
+
+  } catch (err) {
+    console.error("❌ 新增失敗:", err);
+    alert("新增交易失敗，請檢查伺服器連線");
+  }
 });
 
+
+
 async function loadTransactions() {
-  try {
-    const res = await fetch("https://my-backend.onrender.com/api/transactions");
-    const data = await res.json();
-    console.log("從後端抓到資料:", data);
-    state.tx = data.map(t => ({
-      id: t._id, // 用 MongoDB 的 id
-      date: t.date.slice(0,10),
-      type: t.type,
-      amount: t.amount,
-      category: t.category || '',
-      note: t.note || ''
-    }));
-    render();
-  } catch (err) {
-    console.error("抓取交易紀錄失敗:", err);
-  }
+  const res = await fetch("https://my-backend.onrender.com/api/transactions");
+  const data = await res.json();
+
+  const tbody = document.querySelector("#txTbody");
+  tbody.innerHTML = "";
+
+  data.forEach(tx => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${new Date(tx.date).toLocaleDateString()}</td>
+      <td>${tx.type === "income" ? "收入" : "支出"}</td>
+      <td>${tx.category || "-"}</td>
+      <td>${tx.note || ""}</td>
+      <td>${tx.amount}</td>
+      <td></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 
