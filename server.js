@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // 靜態檔案 (這裡先用 __dirname，因為你的 index.html 在根目錄)
-app.use(express.static(__dirname, "../public/html"));
+app.use(express.static(__dirname));
 
 // MongoDB 連線
 mongoose
@@ -52,7 +52,7 @@ app.post("/api/transactions", async (req, res) => {
 
 // 把 / 導向到 index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // 啟動伺服器（只留這一個）
