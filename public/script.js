@@ -215,12 +215,19 @@ $('#addBtn').addEventListener('click', async () => {
   const newTx = { date, type, amount, category, note };
 
   try {
-    // 🔥 把資料送去後端
-    const res = await fetch("https://my-backend.onrender.com/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTx)
-    });
+ const API_BASE =
+  window.location.hostname.includes("localhost")
+    ? "http://localhost:3000"
+    : "/api";
+
+
+// 用法
+const res = await fetch(`${API_BASE}/transactions`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(newTx)
+});
+
 
     const savedTx = await res.json();
     console.log("✅ 已寫入 MongoDB:", savedTx);
@@ -242,7 +249,7 @@ $('#addBtn').addEventListener('click', async () => {
 
 
 async function loadTransactions() {
-  const res = await fetch("https://my-backend.onrender.com/api/transactions");
+  const res = await fetch(`${API_BASE}/transactions`);
   const data = await res.json();
 
   const tbody = document.querySelector("#txTbody");
