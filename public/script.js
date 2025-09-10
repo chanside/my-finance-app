@@ -14,10 +14,6 @@ const incomeEl = document.getElementById('income');
 const expenseEl = document.getElementById('expense');
 const savingRateEl = document.getElementById('savingRate');
 
-const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
-const fileInput = document.getElementById('fileInput');
-
 const budgetCat = document.getElementById('budgetCat');
 const budgetAmt = document.getElementById('budgetAmt');
 const setBudget = document.getElementById('setBudget');
@@ -28,10 +24,10 @@ const goalTarget = document.getElementById('goalTarget');
 const addGoal = document.getElementById('addGoal');
 const goalList = document.getElementById('goalList');
 
-// ---------------- 資料初始化 ----------------
-let transactions = JSON.parse(localStorage.getItem('finance-data')) || [];
-let budgets = JSON.parse(localStorage.getItem('finance-budget')) || {};
-let goals = JSON.parse(localStorage.getItem('finance-goal')) || [];
+// ---------------- 前端資料初始化 ----------------
+let transactions = [];
+let budgets = {};
+let goals = [];
 
 // ---------------- Chart.js 初始化 ----------------
 const ctx = document.getElementById('chartCanvas').getContext('2d');
@@ -51,18 +47,44 @@ const chart = new Chart(ctx, {
   }
 });
 
-// ---------------- LocalStorage 儲存函式 ----------------
-function saveData(){ localStorage.setItem('finance-data', JSON.stringify(transactions)); }
-function saveBudget(){ localStorage.setItem('finance-budget', JSON.stringify(budgets)); }
-function saveGoal(){ localStorage.setItem('finance-goal', JSON.stringify(goals)); }
+// ---------------- API 函式 ----------------
+async function fetchTransactions() {
+  const res = await fetch('/api/transactions');
+  const data = await res.json();
+  transactions = data.map(tx => ({
+    ...tx,
+    date: tx.date.slice(0,10) // YYYY-MM-DD
+  }));
+}
+
+async function addTransactionAPI(tx) {
+  const res = await fetch('/api/transactions', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(tx)
+  });
+  return await res.json();
+}
+
+async function deleteTransactionAPI(id) {
+  await fetch(`/api/transactions/${id}`, { method:'DELETE' });
+}
+
+// ---------------- 格式化日期 ----------------
+function formatDate(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // ---------------- 交易表格渲染 ----------------
-function renderTable(){
+function renderTable() {
   const key = searchKey.value.trim();
   txTbody.innerHTML = '';
 
-  transactions.forEach((tx,index)=>{
-    // 關鍵字搜尋（分類或備註）
+  transactions.forEach((tx, index) => {
     if(key && !tx.category.includes(key) && !tx.note?.includes(key)) return;
 
     const tr = document.createElement('tr');
@@ -83,65 +105,78 @@ function updateSummary() {
   const incomeTx = transactions.filter(tx => tx.type === '收入');
   const expenseTx = transactions.filter(tx => tx.type === '支出');
 
-  const income = incomeTx.reduce((a, b) => a + b.amount, 0);
-  const expense = expenseTx.reduce((a, b) => a + b.amount, 0);
+  const income = incomeTx.reduce((a,b)=>a+b.amount,0);
+  const expense = expenseTx.reduce((a,b)=>a+b.amount,0);
   const balance = income - expense;
 
   balanceEl.textContent = `$${balance}`;
   incomeEl.textContent = `$${income}`;
   expenseEl.textContent = `$${expense}`;
-
-  // 更新筆數
   document.getElementById('incomeCount').textContent = `${incomeTx.length} 筆`;
   document.getElementById('expenseCount').textContent = `${expenseTx.length} 筆`;
 
-  // 儲蓄率負數直接顯示0
-  let savingRate = income > 0 ? Math.round((balance / income) * 100) : 0;
-  if (savingRate < 0) savingRate = 0;
+  let savingRate = income>0 ? Math.round((balance/income)*100) : 0;
   savingRateEl.textContent = `${savingRate}%`;
 
   updateChart();
 }
 
 // ---------------- 新增交易 ----------------
-function addTransaction(){
+async function addTransaction() {
   const type = txType.value;
   const amount = parseFloat(txAmount.value);
   const category = txCategory.value || '未分類';
-  const date = txDate.value || new Date().toISOString().slice(0,10);
+  const date = txDate.value ? formatDate(txDate.value) : formatDate(new Date());
   const note = txNote.value || '';
 
   if(!amount || amount <= 0) return;
 
-  transactions.push({type, amount, category, date, note});
-  saveData(); renderTable(); updateSummary();
-
-  // 清空輸入欄位
-  txAmount.value = '';
-  txCategory.value = '';
-  txDate.value = '';
-  txNote.value = '';
+  const tx = { type, amount, category, date, note };
+  try {
+    const savedTx = await addTransactionAPI(tx);
+    transactions.push({ ...savedTx, date: formatDate(savedTx.date) });
+    renderTable();
+    updateSummary();
+    txAmount.value = '';
+    txCategory.value = '';
+    txDate.value = '';
+    txNote.value = '';
+  } catch(err) {
+    alert("新增交易失敗: " + err.message);
+  }
 }
 
 // ---------------- 刪除交易 ----------------
-function deleteTx(index){
-  transactions.splice(index,1); 
-  saveData(); renderTable(); updateSummary();
+async function deleteTx(index) {
+  const tx = transactions[index];
+  if(!tx._id) return alert("無法刪除，交易資料尚未同步");
+
+  if(confirm("確定刪除這筆交易嗎？")){
+    try {
+      await deleteTransactionAPI(tx._id);
+      transactions.splice(index,1);
+      renderTable();
+      updateSummary();
+    } catch(err) {
+      alert("刪除失敗: " + err.message);
+    }
+  }
 }
 
 // ---------------- 重置交易 ----------------
 function resetData(){
   if(confirm("確定要清空所有交易資料嗎？")){
-    transactions=[]; 
-    saveData(); renderTable(); updateSummary();
+    transactions = [];
+    renderTable();
+    updateSummary();
   }
 }
 
-// 關鍵字搜尋即時觸發
+// ---------------- 關鍵字搜尋 ----------------
 searchKey.addEventListener('input', renderTable);
 
 // ---------------- 更新 Chart ----------------
-function updateChart(){
+function updateChart() {
   const now = new Date();
   const labels = [];
   const incomeData = [];
@@ -149,11 +184,15 @@ function updateChart(){
 
   for(let i=11;i>=0;i--){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; // YYYY-MM
     labels.push(monthStr);
 
-    const incSum = transactions.filter(tx=>tx.type==='收入' && tx.date.startsWith(monthStr)).reduce((a,b)=>a+b.amount,0);
-    const expSum = transactions.filter(tx=>tx.type==='支出' && tx.date.startsWith(monthStr)).reduce((a,b)=>a+b.amount,0);
+    const incSum = transactions
+      .filter(tx=>tx.type==='收入' && tx.date.startsWith(monthStr))
+      .reduce((a,b)=>a+b.amount,0);
+    const expSum = transactions
+      .filter(tx=>tx.type==='支出' && tx.date.startsWith(monthStr))
+      .reduce((a,b)=>a+b.amount,0);
 
     incomeData.push(incSum);
     expenseData.push(expSum);
@@ -165,35 +204,13 @@ function updateChart(){
   chart.update();
 }
 
-// ---------------- 匯出 / 匯入資料 ----------------
-exportBtn.addEventListener('click',()=>{
-  const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(transactions));
-  const a=document.createElement('a'); a.href=dataStr; a.download='finance-data.json'; a.click();
-});
-
-importBtn.addEventListener('click',()=>fileInput.click());
-fileInput.addEventListener('change',(e)=>{
-  const file=e.target.files[0];
-  if(!file) return;
-
-  const reader=new FileReader();
-  reader.onload=(ev)=>{
-    try{
-      const imported = JSON.parse(ev.target.result);
-      if(Array.isArray(imported)) transactions=imported; 
-      saveData(); renderTable(); updateSummary();
-    }catch(err){ alert("匯入資料格式錯誤"); }
-  };
-  reader.readAsText(file);
-});
-
 // ---------------- 預算功能 ----------------
 setBudget.addEventListener('click',()=>{
   const cat = budgetCat.value.trim();
   const amt = parseFloat(budgetAmt.value);
   if(!cat || !amt) return alert("請輸入分類與金額");
   budgets[cat] = amt; 
-  saveBudget(); renderBudget();
+  renderBudget();
 });
 
 function renderBudget(){
@@ -212,8 +229,7 @@ addGoal.addEventListener('click',()=>{
   if(!name || !target) return alert("請輸入名稱與目標金額");
 
   goals.push({name, target});
-  saveGoal(); renderGoal();
-
+  renderGoal();
   goalName.value = '';
   goalTarget.value = '';
 });
@@ -231,15 +247,22 @@ function renderGoal(){
 
 function deleteGoal(index){ 
   goals.splice(index,1); 
-  saveGoal(); renderGoal(); 
+  renderGoal(); 
 }
 
-// ---------------- 綁定新增交易 / 重置 ----------------
+// ---------------- 綁定新增 / 重置 ----------------
 addBtn.addEventListener('click', addTransaction);
 resetBtn.addEventListener('click', resetData);
 
 // ---------------- 初始渲染 ----------------
-renderTable(); 
-updateSummary(); 
-renderBudget(); 
-renderGoal();
+(async function init() {
+  try {
+    await fetchTransactions();
+    renderTable(); 
+    updateSummary(); 
+    renderBudget(); 
+    renderGoal();
+  } catch(err) {
+    console.error("讀取交易資料失敗:", err);
+  }
+})();
