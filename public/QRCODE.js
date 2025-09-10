@@ -20,7 +20,6 @@ function startQRScanner() {
         { fps: 10, qrbox: 250 },
         onScanSuccess
       );
-      // 顯示切換鏡頭按鈕（如果有多個相機）
       document.getElementById("switch-camera-btn").style.display =
         cameraList.length > 1 ? "inline-block" : "none";
     } else {
@@ -50,32 +49,33 @@ function switchCamera() {
 // 成功掃描 QRCode
 function onScanSuccess(decodedText) {
   try {
-    // 嘗試解析 JSON 格式的 QRCode
     const data = JSON.parse(decodedText);
     if (data.expense && data.category) {
       document.getElementById("txAmount").value = data.expense;
       document.getElementById("txCategory").value = data.category;
       document.getElementById("txNote").value = data.note || "";
-      document.getElementById("txType").value = "expense"; // 預設為支出
+      document.getElementById("txType").value = "支出"; // 中文支出
       addTransaction();
     }
   } catch (e) {
-    // 如果不是 JSON，則嘗試匹配金額數字
     const match = decodedText.match(/(\d{2,6})\s*(元|TX)?/);
     if (match) {
       document.getElementById("txAmount").value = parseInt(match[1]);
       document.getElementById("txCategory").value = "餐飲";
       document.getElementById("txNote").value = "掃描發票";
-      document.getElementById("txType").value = "expense";
+      document.getElementById("txType").value = "支出";
       addTransaction();
     } else {
       alert("QR Code 格式錯誤或無法辨識金額！");
     }
   }
 
-  // 掃描完成後關閉鏡頭
   qrScanner.stop().then(() => {
     document.getElementById("qr-reader").style.display = "none";
     document.getElementById("switch-camera-btn").style.display = "none";
   });
 }
+
+// 綁定按鈕
+document.getElementById("qrBtn").addEventListener("click", startQRScanner);
+document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
