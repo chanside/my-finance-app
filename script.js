@@ -1,306 +1,268 @@
-/********************************************
- * Finance Helper 修正版
- ********************************************/
+// ---------------- DOM 參考 ----------------
+const txTbody = document.getElementById('txTbody');
+const txType = document.getElementById('txType');
+const txAmount = document.getElementById('txAmount');
+const txCategory = document.getElementById('txCategory');
+const txDate = document.getElementById('txDate');
+const txNote = document.getElementById('txNote');
+const addBtn = document.getElementById('addBtn');
+const resetBtn = document.getElementById('resetBtn');
+const searchKey = document.getElementById('searchKey');
 
-const STORE_KEY = 'finance-helper-v1';
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
+const balanceEl = document.getElementById('balance');
+const incomeEl = document.getElementById('income');
+const expenseEl = document.getElementById('expense');
+const savingRateEl = document.getElementById('savingRate');
 
-const state = {
-  tx: [],
-  budgets: {},
-  goals: []
-};
+const budgetCat = document.getElementById('budgetCat');
+const budgetAmt = document.getElementById('budgetAmt');
+const setBudget = document.getElementById('setBudget');
+const budgetList = document.getElementById('budgetList');
 
-// 格式化金額
-const fmt = n => isNaN(n) ? '$0' :
-  new Intl.NumberFormat('zh-Hant-TW', { style:'currency', currency:'TWD', maximumFractionDigits:0 }).format(n);
+const goalName = document.getElementById('goalName');
+const goalTarget = document.getElementById('goalTarget');
+const addGoal = document.getElementById('addGoal');
+const goalList = document.getElementById('goalList');
 
-const monthKey = d => d.slice(0,7);
-const todayStr = () => new Date().toISOString().slice(0,10);
-const uid = () => Math.random().toString(36).slice(2,9);
+// ---------------- 前端資料初始化 ----------------
+let transactions = [];
+let budgets = {};
+let goals = [];
 
-// 儲存與載入
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-function load() {
-  const data = localStorage.getItem(STORE_KEY);
-  if (data) Object.assign(state, JSON.parse(data));
-}
-
-// Reset 功能
-$('#resetBtn').addEventListener('click', () => {
-  if (confirm("確定要清空所有資料嗎？此操作無法復原！")) {
-    state.tx = [];
-    state.budgets = {};
-    state.goals = [];
-    save();
-    render();
-    alert("所有資料已清空！");
+// ---------------- Chart.js 初始化 ----------------
+const ctx = document.getElementById('chartCanvas').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: { 
+    labels: [], 
+    datasets:[
+      {label:'收入', data:[], borderColor:'#28a745', backgroundColor:'rgba(40,167,69,0.2)', tension:0.3, fill:true},
+      {label:'支出', data:[], borderColor:'#dc3545', backgroundColor:'rgba(220,53,69,0.2)', tension:0.3, fill:true}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{y:{beginAtZero:true}}
   }
 });
 
-// -----------------
-// 渲染函式
-// -----------------
-function render() {
-  renderSummary();
-  renderTable();
-  renderBudgets();
-  renderChart();
-  renderGoals();
-  $('#txDate').value ||= todayStr();
-}
-
-function getMonthData(ym) {
-  const list = state.tx.filter(t => monthKey(t.date) === ym);
-  return {
-    income: list.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0),
-    expense: list.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0),
-    countI: list.filter(t=>t.type==='income').length,
-    countE: list.filter(t=>t.type==='expense').length
-  };
-}
-
-function renderSummary() {
-  const ym = todayStr().slice(0,7);
-  const m = getMonthData(ym);
-  $('#income').textContent = fmt(m.income);
-  $('#incomeCount').textContent = m.countI + ' 筆';
-  $('#expense').textContent = fmt(m.expense);
-  $('#expenseCount').textContent = m.countE + ' 筆';
-  const bal = m.income - m.expense;
-  $('#balance').textContent = fmt(bal);
-  $('#balanceNote').textContent = `${ym} 的結餘`;
-  // 可支配收入
-  const disposableIncome = m.income;
-  // 儲蓄金額 = 收入 - 支出
-  const savingAmount = bal;
-  // 儲蓄率
-  const rate = disposableIncome ? Math.round((savingAmount / disposableIncome) * 100) : 0;
-  $('#savingRate').textContent = (rate < 0 ? 0 : rate) + '%';
-}
-
-function renderTable() {
-  const q = $('#q').value?.trim().toLowerCase() || '';
-  const fTypeVal = $('#fType').value;
-  const ym = $('#fMonth').value;
-
-  const list = state.tx
-    .filter(t => !ym || monthKey(t.date) === ym)
-    .filter(t => fTypeVal==='all' || t.type===fTypeVal)
-    .filter(t => !q || (t.category+t.note).toLowerCase().includes(q))
-    .sort((a,b)=>a.date<b.date?1:-1);
-
-  const tbody = $('#txTbody'); tbody.innerHTML = '';
-  list.forEach(t=>{
-    const tr = document.createElement('tr');
-    tr.className='row';
-    tr.innerHTML = `
-      <td>${t.date}</td>
-      <td><span class="pill ${t.type==='income'?'good':'bad'}">${t.type==='income'?'收入':'支出'}</span></td>
-      <td>${t.category||'-'}</td>
-      <td>${t.note||''}</td>
-      <td style="font-weight:700;text-align:right">${fmt(t.amount)}</td>
-      <td style="text-align:right"><button data-del="${t.id}">刪除</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderBudgets() {
-  const wrap = $('#budgetList'); wrap.innerHTML='';
-  const nowYM = todayStr().slice(0,7);
-  const spentByCat = {};
-  state.tx.filter(t=>t.type==='expense' && monthKey(t.date)===nowYM)
-    .forEach(t=>spentByCat[t.category]=(spentByCat[t.category]||0)+t.amount);
-
-  Object.keys(state.budgets).sort().forEach(cat=>{
-    const limit = state.budgets[cat];
-    const used = spentByCat[cat]||0;
-    const ratio = Math.min(1, used/limit||0);
-    const left = Math.max(0, limit-used);
-    const card = document.createElement('div');
-    card.style.marginBottom='10px';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div><strong>${cat}</strong> · <span class="muted">${fmt(used)} / ${fmt(limit)}</span></div>
-        <div class="muted">剩餘 ${fmt(left)}</div>
-      </div>
-      <div class="progress"><div class="bar" style="width:${ratio*100}%"></div></div>
-    `;
-    wrap.appendChild(card);
-  });
-}
-
-function renderGoals() {
-  const wrap = $('#goalList'); wrap.innerHTML='';
-  state.goals.forEach(g=>{
-    const ratio = Math.min(1, (g.saved||0)/(g.target||1));
-    const card = document.createElement('div');
-    card.style.marginBottom='10px'; card.className='card';
-    card.innerHTML=`
-      <h3 style="margin-bottom:8px">${g.name}</h3>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="muted">${fmt(g.saved||0)} / ${fmt(g.target||0)}</div>
-        <div>${Math.round(ratio*100)}%</div>
-      </div>
-      <div class="progress"><div class="bar" style="width:${ratio*100}%"></div></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <input type="number" step="0.01" placeholder="存入金額" data-addsave="${g.id}" />
-        <button data-save="${g.id}">存入</button>
-        <button data-delgoal="${g.id}">刪除目標</button>
-      </div>
-    `;
-    wrap.appendChild(card);
-  });
-}
-
-function renderChart() {
-  const cvs = $('#chart');
-  if (!cvs) return;
-  const ctx = cvs.getContext('2d');
-  const now = new Date();
-  const labels=[],dataI=[],dataE=[];
-  for(let i=11;i>=0;i--){
-    const d = new Date(now.getFullYear(), now.getMonth()-i,1);
-    const ym=d.toISOString().slice(0,7); labels.push(ym);
-    const m=getMonthData(ym);
-    dataI.push(m.income); dataE.push(m.expense);
-  }
-  ctx.clearRect(0,0,cvs.width,cvs.height);
-  const padL=40,padB=24,padT=10,padR=10,W=cvs.width-padL-padR,H=cvs.height-padT-padB;
-  ctx.save(); ctx.translate(padL,padT);
-  const max = Math.max(...dataI,...dataE,1); const yStep=Math.ceil(max/5);
-  ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='12px system-ui';
-  for(let i=0;i<=5;i++){ const y=H-(H*(i/5)); ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillText((yStep*i/1000).toFixed(0)+'k',-34,y+4);}
-  const n=labels.length,bw=W/(n*2);
-  for(let i=0;i<n;i++){
-    const x=i*(W/n)+6,hI=H*(dataI[i]/max),hE=H*(dataE[i]/max);
-    ctx.fillStyle='#8fd3ff';ctx.fillRect(x,H-hI,bw,hI);
-    ctx.fillStyle='#6aa2ff';ctx.fillRect(x+bw+2,H-hE,bw,hE);
-  }
-  ctx.fillStyle='rgba(255,255,255,.6)';
-  for(let i=0;i<n;i+=n>8?2:1){ const x=i*(W/n)+6; ctx.fillText(labels[i].slice(2),x,H+18);}
-  ctx.restore();
-}
-
-// -----------------
-// 事件綁定
-// -----------------
-document.addEventListener('click', e=>{
-  const del = e.target.getAttribute('data-del');
-  if(del){ state.tx=state.tx.filter(t=>t.id!==del); save(); renderTable(); renderSummary(); }
-
-  const saveG=e.target.getAttribute('data-save');
-  if(saveG){
-    const input=$(`[data-addsave="${saveG}"]`); const v=Number(input.value||0);
-    const g=state.goals.find(x=>x.id===saveG);
-    if(g && v>0){ g.saved=(g.saved||0)+v; input.value=''; save(); renderGoals();}
-  }
-
-  const delG=e.target.getAttribute('data-delgoal');
-  if(delG){ state.goals=state.goals.filter(g=>g.id!==delG); save(); renderGoals();}
-});
-
-// 新增交易
-$('#addBtn').addEventListener('click', async () => {
-  const date = $('#txDate').value || todayStr();
-  const type = $('#txType').value;
-  const amount = Number($('#txAmount').value);
-  const category = $('#txCategory').value || (type === 'income' ? '其他收入' : '其他支出');
-  const note = $('#txNote').value || '';
-
-  if (!amount || amount <= 0) return alert('請輸入有效金額');
-
-  const newTx = { date, type, amount, category, note };
-
-  try {
-    // 🔥 把資料送去後端
-    const res = await fetch("https://my-backend.onrender.com/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTx)
-    });
-
-    const savedTx = await res.json();
-    console.log("✅ 已寫入 MongoDB:", savedTx);
-
-    // 更新前端顯示
-    state.tx.push(savedTx);
-    save();
-    render();
-
-    $('#txAmount').value = '';
-    $('#txNote').value = '';
-
-  } catch (err) {
-    console.error("❌ 新增失敗:", err);
-    alert("新增交易失敗，請檢查伺服器連線");
-  }
-});
-
-
-
-async function loadTransactions() {
-  const res = await fetch("https://my-backend.onrender.com/api/transactions");
+// ---------------- API 函式 ----------------
+async function fetchTransactions() {
+  const res = await fetch('/api/transactions');
   const data = await res.json();
+  transactions = data.map(tx => ({
+    ...tx,
+    date: tx.date.slice(0,10) // YYYY-MM-DD
+  }));
+}
 
-  const tbody = document.querySelector("#txTbody");
-  tbody.innerHTML = "";
+async function addTransactionAPI(tx) {
+  const res = await fetch('/api/transactions', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(tx)
+  });
+  return await res.json();
+}
 
-  data.forEach(tx => {
-    const tr = document.createElement("tr");
+async function deleteTransactionAPI(id) {
+  await fetch(`/api/transactions/${id}`, { method:'DELETE' });
+}
+
+// ---------------- 格式化日期 ----------------
+function formatDate(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// ---------------- 交易表格渲染 ----------------
+function renderTable() {
+  const key = searchKey.value.trim();
+  txTbody.innerHTML = '';
+
+  transactions.forEach((tx, index) => {
+    if(key && !tx.category.includes(key) && !tx.note?.includes(key)) return;
+
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${new Date(tx.date).toLocaleDateString()}</td>
-      <td>${tx.type === "income" ? "收入" : "支出"}</td>
-      <td>${tx.category || "-"}</td>
-      <td>${tx.note || ""}</td>
+      <td>${tx.date}</td>
+      <td>${tx.type}</td>
+      <td>${tx.category}</td>
+      <td>${tx.note||''}</td>
       <td>${tx.amount}</td>
-      <td></td>
+      <td><button onclick="deleteTx(${index})">刪除</button></td>
     `;
-    tbody.appendChild(tr);
+    txTbody.appendChild(tr);
   });
 }
 
+// ---------------- 更新摘要 ----------------
+function updateSummary() {
+  const incomeTx = transactions.filter(tx => tx.type === '收入');
+  const expenseTx = transactions.filter(tx => tx.type === '支出');
 
-  loadTransactions();
-// 篩選
-$('#q').addEventListener('input',renderTable);
-$('#fType').addEventListener('change',renderTable);
-$('#fMonth').addEventListener('change',()=>{renderTable(); renderBudgets();});
+  const income = incomeTx.reduce((a,b)=>a+b.amount,0);
+  const expense = expenseTx.reduce((a,b)=>a+b.amount,0);
+  const balance = income - expense;
 
-// 設定預算
-$('#setBudget').addEventListener('click',()=>{
-  const cat=$('#budgetCat').value.trim(); const amt=Number($('#budgetAmt').value);
-  if(!cat||!amt) return alert('請填入分類與金額');
-  state.budgets[cat]=amt; save(); renderBudgets();
-  $('#budgetCat').value=''; $('#budgetAmt').value='';
+  balanceEl.textContent = `$${balance}`;
+  incomeEl.textContent = `$${income}`;
+  expenseEl.textContent = `$${expense}`;
+  document.getElementById('incomeCount').textContent = `${incomeTx.length} 筆`;
+  document.getElementById('expenseCount').textContent = `${expenseTx.length} 筆`;
+
+  let savingRate = income>0 ? Math.round((balance/income)*100) : 0;
+  savingRateEl.textContent = `${savingRate}%`;
+
+  updateChart();
+}
+
+// ---------------- 新增交易 ----------------
+async function addTransaction() {
+  const type = txType.value;
+  const amount = parseFloat(txAmount.value);
+  const category = txCategory.value || '未分類';
+  const date = txDate.value ? formatDate(txDate.value) : formatDate(new Date());
+  const note = txNote.value || '';
+
+  if(!amount || amount <= 0) return;
+
+  const tx = { type, amount, category, date, note };
+  try {
+    const savedTx = await addTransactionAPI(tx);
+    transactions.push({ ...savedTx, date: formatDate(savedTx.date) });
+    renderTable();
+    updateSummary();
+    txAmount.value = '';
+    txCategory.value = '';
+    txDate.value = '';
+    txNote.value = '';
+  } catch(err) {
+    alert("新增交易失敗: " + err.message);
+  }
+}
+
+// ---------------- 刪除交易 ----------------
+async function deleteTx(index) {
+  const tx = transactions[index];
+  if(!tx._id) return alert("無法刪除，交易資料尚未同步");
+
+  if(confirm("確定刪除這筆交易嗎？")){
+    try {
+      await deleteTransactionAPI(tx._id);
+      transactions.splice(index,1);
+      renderTable();
+      updateSummary();
+    } catch(err) {
+      alert("刪除失敗: " + err.message);
+    }
+  }
+}
+
+// ---------------- 重置交易 ----------------
+function resetData(){
+  if(confirm("確定要清空所有交易資料嗎？")){
+    transactions = [];
+    renderTable();
+    updateSummary();
+  }
+}
+
+// ---------------- 關鍵字搜尋 ----------------
+searchKey.addEventListener('input', renderTable);
+
+// ---------------- 更新 Chart ----------------
+function updateChart() {
+  const now = new Date();
+  const labels = [];
+  const incomeData = [];
+  const expenseData = [];
+
+  for(let i=11;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; // YYYY-MM
+    labels.push(monthStr);
+
+    const incSum = transactions
+      .filter(tx=>tx.type==='收入' && tx.date.startsWith(monthStr))
+      .reduce((a,b)=>a+b.amount,0);
+    const expSum = transactions
+      .filter(tx=>tx.type==='支出' && tx.date.startsWith(monthStr))
+      .reduce((a,b)=>a+b.amount,0);
+
+    incomeData.push(incSum);
+    expenseData.push(expSum);
+  }
+
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = incomeData;
+  chart.data.datasets[1].data = expenseData;
+  chart.update();
+}
+
+// ---------------- 預算功能 ----------------
+setBudget.addEventListener('click',()=>{
+  const cat = budgetCat.value.trim();
+  const amt = parseFloat(budgetAmt.value);
+  if(!cat || !amt) return alert("請輸入分類與金額");
+  budgets[cat] = amt; 
+  renderBudget();
 });
 
-// 新增目標
-$('#addGoal').addEventListener('click',()=>{
-  const name=$('#goalName').value.trim(); const target=Number($('#goalTarget').value);
-  if(!name||!target) return alert('請填入目標名稱與金額');
-  state.goals.push({id:uid(),name,target,saved:0}); save(); renderGoals();
-  $('#goalName').value=''; $('#goalTarget').value='';
+function renderBudget(){
+  budgetList.innerHTML='';
+  for(const cat in budgets){
+    const div = document.createElement('div');
+    div.textContent = `${cat}：$${budgets[cat]}`;
+    budgetList.appendChild(div);
+  }
+}
+
+// ---------------- 儲蓄目標功能 ----------------
+addGoal.addEventListener('click',()=>{
+  const name = goalName.value.trim();
+  const target = parseFloat(goalTarget.value);
+  if(!name || !target) return alert("請輸入名稱與目標金額");
+
+  goals.push({name, target});
+  renderGoal();
+  goalName.value = '';
+  goalTarget.value = '';
 });
 
-// 匯出 JSON
-$('#exportBtn').addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='finance-data.json'; a.click();
-});
+function renderGoal(){
+  goalList.innerHTML='';
+  const balance = parseFloat(balanceEl.textContent.replace('$','')) || 0;
+  goals.forEach((g,i)=>{
+    const div = document.createElement('div');
+    const progress = Math.min(100, Math.round(balance/g.target*100));
+    div.innerHTML = `${g.name}：$${g.target} 進度 ${progress}% <button onclick="deleteGoal(${i})">刪除</button>`;
+    goalList.appendChild(div);
+  });
+}
 
-// 匯入 JSON
-$('#importBtn').addEventListener('click',()=>$('#fileInput').click());
-$('#fileInput').addEventListener('change',(e)=>{
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{ try{ Object.assign(state,JSON.parse(reader.result)); save(); render(); } catch { alert('匯入失敗：檔案不是有效的 JSON'); } };
-  reader.readAsText(file);
-});
+function deleteGoal(index){ 
+  goals.splice(index,1); 
+  renderGoal(); 
+}
 
-// -----------------
-// 初始化
-// -----------------
-load(); render();
+// ---------------- 綁定新增 / 重置 ----------------
+addBtn.addEventListener('click', addTransaction);
+resetBtn.addEventListener('click', resetData);
+
+// ---------------- 初始渲染 ----------------
+(async function init() {
+  try {
+    await fetchTransactions();
+    renderTable(); 
+    updateSummary(); 
+    renderBudget(); 
+    renderGoal();
+  } catch(err) {
+    console.error("讀取交易資料失敗:", err);
+  }
+})();
