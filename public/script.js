@@ -47,29 +47,6 @@ const chart = new Chart(ctx, {
   }
 });
 
-// ---------------- API 函式 ----------------
-async function fetchTransactions() {
-  const res = await fetch('/api/transactions');
-  const data = await res.json();
-  transactions = data.map(tx => ({
-    ...tx,
-    date: tx.date.slice(0,10) // YYYY-MM-DD
-  }));
-}
-
-async function addTransactionAPI(tx) {
-  const res = await fetch('/api/transactions', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(tx)
-  });
-  return await res.json();
-}
-
-async function deleteTransactionAPI(id) {
-  await fetch(`/api/transactions/${id}`, { method:'DELETE' });
-}
-
 // ---------------- 格式化日期 ----------------
 function formatDate(date) {
   const d = new Date(date);
@@ -121,60 +98,6 @@ function updateSummary() {
   updateChart();
 }
 
-// ---------------- 新增交易 ----------------
-async function addTransaction() {
-  const type = txType.value;
-  const amount = parseFloat(txAmount.value);
-  const category = txCategory.value || '未分類';
-  const date = txDate.value ? formatDate(txDate.value) : formatDate(new Date());
-  const note = txNote.value || '';
-
-  if(!amount || amount <= 0) return;
-
-  const tx = { type, amount, category, date, note };
-  try {
-    const savedTx = await addTransactionAPI(tx);
-    transactions.push({ ...savedTx, date: formatDate(savedTx.date) });
-    renderTable();
-    updateSummary();
-    txAmount.value = '';
-    txCategory.value = '';
-    txDate.value = '';
-    txNote.value = '';
-  } catch(err) {
-    alert("新增交易失敗: " + err.message);
-  }
-}
-
-// ---------------- 刪除交易 ----------------
-async function deleteTx(index) {
-  const tx = transactions[index];
-  if(!tx._id) return alert("無法刪除，交易資料尚未同步");
-
-  if(confirm("確定刪除這筆交易嗎？")){
-    try {
-      await deleteTransactionAPI(tx._id);
-      transactions.splice(index,1);
-      renderTable();
-      updateSummary();
-    } catch(err) {
-      alert("刪除失敗: " + err.message);
-    }
-  }
-}
-
-// ---------------- 重置交易 ----------------
-function resetData(){
-  if(confirm("確定要清空所有交易資料嗎？")){
-    transactions = [];
-    renderTable();
-    updateSummary();
-  }
-}
-
-// ---------------- 關鍵字搜尋 ----------------
-searchKey.addEventListener('input', renderTable);
-
 // ---------------- 更新 Chart ----------------
 function updateChart() {
   const now = new Date();
@@ -184,7 +107,7 @@ function updateChart() {
 
   for(let i=11;i>=0;i--){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; // YYYY-MM
+    const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
     labels.push(monthStr);
 
     const incSum = transactions
@@ -203,6 +126,48 @@ function updateChart() {
   chart.data.datasets[1].data = expenseData;
   chart.update();
 }
+
+// ---------------- 新增交易 ----------------
+function addTransaction(tx=null) {
+  let type = tx?.type || txType.value;
+  let amount = tx?.amount || parseFloat(txAmount.value);
+  let category = tx?.category || txCategory.value || '未分類';
+  let date = tx?.date || (txDate.value ? formatDate(txDate.value) : formatDate(new Date()));
+  let note = tx?.note || txNote.value || '';
+
+  if(!amount || amount<=0) return;
+
+  transactions.push({ type, amount, category, date, note });
+  renderTable();
+  updateSummary();
+
+  // 清空欄位
+  txAmount.value = '';
+  txCategory.value = '';
+  txDate.value = '';
+  txNote.value = '';
+}
+
+// ---------------- 刪除交易 ----------------
+function deleteTx(index) {
+  if(confirm("確定刪除這筆交易嗎？")){
+    transactions.splice(index,1);
+    renderTable();
+    updateSummary();
+  }
+}
+
+// ---------------- 重置交易 ----------------
+function resetData(){
+  if(confirm("確定要清空所有交易資料嗎？")){
+    transactions = [];
+    renderTable();
+    updateSummary();
+  }
+}
+
+// ---------------- 關鍵字搜尋 ----------------
+searchKey.addEventListener('input', renderTable);
 
 // ---------------- 預算功能 ----------------
 setBudget.addEventListener('click',()=>{
@@ -251,18 +216,13 @@ function deleteGoal(index){
 }
 
 // ---------------- 綁定新增 / 重置 ----------------
-addBtn.addEventListener('click', addTransaction);
+addBtn.addEventListener('click',()=>addTransaction());
 resetBtn.addEventListener('click', resetData);
 
 // ---------------- 初始渲染 ----------------
-(async function init() {
-  try {
-    await fetchTransactions();
-    renderTable(); 
-    updateSummary(); 
-    renderBudget(); 
-    renderGoal();
-  } catch(err) {
-    console.error("讀取交易資料失敗:", err);
-  }
+(function init() {
+  renderTable(); 
+  updateSummary(); 
+  renderBudget(); 
+  renderGoal();
 })();

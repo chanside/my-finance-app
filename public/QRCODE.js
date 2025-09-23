@@ -1,4 +1,4 @@
-// QRCODE.js - 簡單 QR 掃描器，直接填入交易欄位
+// QRCODE.js - 手機優先 QR 掃描器，自動填入交易欄位
 
 let qrScanner;
 let currentCameraIndex = 0;
@@ -17,8 +17,12 @@ function startQRScanner() {
     .then(cameras => {
       if (cameras && cameras.length) {
         cameraList = cameras;
-        currentCameraIndex = 0;
-        startCamera(cameras[currentCameraIndex].id);
+
+        // 手機優先使用後置鏡頭
+        currentCameraIndex = cameras.findIndex(cam => /back|rear|環境/i.test(cam.label)) || 0;
+
+        startCamera(cameraList[currentCameraIndex].id);
+
         document.getElementById("switch-camera-btn").style.display =
           cameraList.length > 1 ? "inline-block" : "none";
       } else {
@@ -35,7 +39,7 @@ function startQRScanner() {
 function startCamera(cameraId) {
   qrScanner.start(
     cameraId,
-    { fps: 10, qrbox: 250 },
+    { fps: 10, qrbox: 250, aspectRatio: 1.0 },
     onScanSuccess
   ).catch(err => {
     console.error("QR 掃描啟動失敗", err);
@@ -45,6 +49,7 @@ function startCamera(cameraId) {
 // 切換鏡頭
 function switchCamera() {
   if (!cameraList.length || !qrScanner) return;
+
   qrScanner.stop().then(() => {
     currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
     startCamera(cameraList[currentCameraIndex].id);
@@ -55,18 +60,17 @@ function switchCamera() {
 
 // 成功掃描 QRCode
 function onScanSuccess(decodedText) {
-  // 嘗試從文字中抓取金額（發票通常會有 2-6 位數字）
+  // 嘗試從文字中抓取金額（發票通常有 2-6 位數字）
   const match = decodedText.match(/(\d{2,6})\s*(元|TX)?/);
   if (match) {
     const amount = parseInt(match[1]);
     document.getElementById("txAmount").value = amount;
-    document.getElementById("txCategory").value = "餐飲"; // 可預設
+    document.getElementById("txCategory").value = "餐飲";
     document.getElementById("txNote").value = "掃描發票";
     document.getElementById("txType").value = "支出";
 
     // 呼叫 script.js 的 addTransaction()
     addTransaction();
-
   } else {
     alert("無法辨識金額，請確認 QR Code 格式");
     console.error("QR decode failed:", decodedText);
