@@ -1,0 +1,221 @@
+/* 全域設定 */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #0668ca;
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* ===== Header ===== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+}
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+header .logo {
+  font-size: 28px;
+  font-weight: bold;
+  color: #4a90e2;
+}
+header h1 {
+  font-size: 28px;
+  margin: 0;
+}
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+button, input, select {
+  font-size: 16px;
+  padding: 8px;
+}
+button.primary {
+  background: #4a90e2;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+button.primary:hover { background: #357abd; }
+
+/* ===== Cards ===== */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+}
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 15px;
+}
+.card h3 { margin-top: 0; }
+.money { font-size: 24px; margin: 5px 0; }
+.money.good { color: #28a745; }
+.money.bad { color: #dc3545; }
+.money.warn { color: #f0ad4e; }
+.muted { font-size: 12px; color: #888; }
+
+/* ===== Main Panel ===== */
+.panel {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* ===== Form ===== */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+input, select, button {
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+/* ===== Table ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.table th, .table td {
+  border-bottom: 1px solid #eee;
+  padding: 8px;
+  text-align: center;
+}
+.table th { background: #f0f0f0; }
+
+/* ===== 側邊選單 ===== */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 240px;
+  height: 100%;
+  background: linear-gradient(180deg, #ffffff, #f5faff);
+  box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+  overflow-y: auto;
+  transition: left 0.3s ease;
+  z-index: 1000;
+  padding: 20px 15px;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+.side-menu.active { left: 0; }
+
+.side-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.side-header h2 {
+  font-size: 18px;
+  margin: 0;
+  color: #0668ca;
+}
+.side-header button {
+  font-size: 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.side-menu li {
+  margin: 12px 0;
+}
+.side-menu a {
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.side-menu a:hover {
+  background: #0668ca;
+  color: #fff;
+}
+
+/* 遮罩 */
+.overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  z-index: 900;
+}
+.overlay.active { display: block; }
+
+
+/* 漢堡按鈕 */
+.menu-btn {
+  position: fixed; /* 固定在畫面左上角 */
+  top: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: #0668ca;
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, transform 0.2s;
+  z-index: 1100;
+}
+.menu-btn:hover {
+  background: #0457a8;
+  transform: scale(1.1) rotate(5deg);
+}
+.menu-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===== 手機版覆蓋 ===== */
+@media (max-width: 768px) {
+  body { padding: 0; }
+  .container { padding: 10px; max-width: 480px; margin:auto; }
+  header { flex-direction: column; gap: 10px; }
+  .header-actions { flex-wrap: wrap; gap: 5px; justify-content: center; }
+  .grid.cards { display: flex; flex-direction: column; gap: 10px; }
+  .panel { display: flex; flex-direction: column; gap: 15px; }
+  .form-row { flex-direction: column; gap: 8px; }
+  .form-actions { flex-direction: column; gap: 8px; }
+  table.table { display: block; overflow-x: auto; }
+  table.table th, table.table td { min-width: 80px; text-align: left; }
+  #qr-reader { width: 100% !important; max-width: 360px; margin:auto; }
+  canvas { width: 100% !important; height: auto !important; }
+}
