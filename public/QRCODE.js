@@ -1,5 +1,4 @@
 // QRCODE.js - 手機優先 QR 掃描器，自動填入交易欄位
-
 let qrScanner;
 let currentCameraIndex = 0;
 let cameraList = [];
@@ -18,9 +17,11 @@ function startQRScanner() {
       if (cameras && cameras.length) {
         cameraList = cameras;
 
-        // 預設使用後鏡頭，如果找不到則使用第一個
+        // 預設後鏡頭
         let cameraId = cameras[0].id;
-        const backCam = cameras.find(cam => /back|rear|environment|環境/i.test(cam.label));
+        const backCam = cameras.find(cam =>
+          /back|rear|environment|環境/i.test(cam.label)
+        );
         if (backCam) {
           cameraId = backCam.id;
           currentCameraIndex = cameras.indexOf(backCam);
@@ -42,34 +43,29 @@ function startQRScanner() {
 
 // 開始指定相機
 function startCamera(cameraId) {
-  const config = {
-    fps: 10,
-    qrbox: 250,
-    aspectRatio: 1.0
-  };
+  const config = { fps: 10, qrbox: 250, aspectRatio: 1.0 };
 
-  // 如果有 cameraId，用 cameraId；否則用 facingMode 強制後鏡頭
-  const cameraConfig = cameraId ? { facingMode: { exact: "environment" } } : { facingMode: "environment" };
-
-  qrScanner.start(
-    cameraId || cameraConfig,
-    config,
-    onScanSuccess
-  ).catch(err => {
-    console.error("QR 掃描啟動失敗", err);
-    alert("相機啟動失敗：" + err.message);
-  });
+  qrScanner
+    .start(cameraId ? cameraId : { facingMode: "environment" }, config, onScanSuccess)
+    .catch(err => {
+      console.error("QR 掃描啟動失敗", err);
+      alert("相機啟動失敗：" + err.message);
+    });
 }
+
 // 切換鏡頭
 function switchCamera() {
   if (!cameraList.length || !qrScanner) return;
 
-  qrScanner.stop().then(() => {
-    currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
-    startCamera(cameraList[currentCameraIndex].id);
-  }).catch(err => {
-    console.error("切換相機失敗", err);
-  });
+  qrScanner
+    .stop()
+    .then(() => {
+      currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
+      startCamera(cameraList[currentCameraIndex].id);
+    })
+    .catch(err => {
+      console.error("切換相機失敗", err);
+    });
 }
 
 // 成功掃描 QRCode
@@ -88,6 +84,7 @@ function onScanSuccess(decodedText) {
     console.error("QR decode failed:", decodedText);
   }
 
+  // 掃描一次後自動停止
   qrScanner.stop().then(() => {
     document.getElementById("qr-reader").style.display = "none";
     document.getElementById("switch-camera-btn").style.display = "none";
