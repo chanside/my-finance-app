@@ -145,7 +145,7 @@ app.post("/api/qrcode", async (req,res) => {
 
 // ================= 靜態資源 =================
 app.use(express.static(path.join(__dirname, "../public")));
-app.get("/", (req,res) => res.sendFile(path.join(__dirname,"../public/index.html")));
+app.get("/", (req,res) => res.sendFile(path.join(__dirname,"../public/HTML/index.html")));//設置首頁
 
 // ================= 啟動 =================
 app.listen(PORT, () => {
