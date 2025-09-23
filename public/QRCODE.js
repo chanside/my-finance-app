@@ -1,6 +1,8 @@
-let qrScanner = null;
-let cameraList = [];
+// QRCODE.js - 簡單 QR 掃描器，直接填入交易欄位
+
+let qrScanner;
 let currentCameraIndex = 0;
+let cameraList = [];
 
 // 啟動 QR 掃描
 function startQRScanner() {
@@ -13,108 +15,70 @@ function startQRScanner() {
 
   Html5Qrcode.getCameras()
     .then(cameras => {
-      if (!cameras || cameras.length === 0) {
-        alert("找不到相機裝置！");
-        return;
+      if (cameras && cameras.length) {
+        cameraList = cameras;
+        currentCameraIndex = 0;
+        startCamera(cameras[currentCameraIndex].id);
+        document.getElementById("switch-camera-btn").style.display =
+          cameraList.length > 1 ? "inline-block" : "none";
+      } else {
+        alert("找不到相機裝置。");
       }
-
-      cameraList = cameras;
-      currentCameraIndex = 0;
-
-      startCamera(cameraList[currentCameraIndex].id);
-
-      // 顯示切換鏡頭按鈕（如果有多個攝影機）
-      document.getElementById("switch-camera-btn").style.display =
-        cameraList.length > 1 ? "inline-block" : "none";
     })
     .catch(err => {
-      console.error("無法取得攝影機：", err);
-      alert(
-        "無法啟動相機，請確認瀏覽器權限、HTTPS 或設備支援攝影機"
-      );
+      alert("無法啟動相機，請允許權限或確認設備支援攝影機。");
+      console.error(err);
     });
 }
 
-// 啟動指定 cameraId
+// 開始指定相機
 function startCamera(cameraId) {
-  if (!qrScanner) return;
-  qrScanner
-    .start(
-      cameraId,
-      { fps: 10, qrbox: 250 },
-      onScanSuccess,
-      onScanFailure
-    )
-    .catch(err => {
-      console.error("啟動攝影機失敗：", err);
-      alert("啟動攝影機失敗，請確認權限或設備支援");
-    });
+  qrScanner.start(
+    cameraId,
+    { fps: 10, qrbox: 250 },
+    onScanSuccess
+  ).catch(err => {
+    console.error("QR 掃描啟動失敗", err);
+  });
 }
 
 // 切換鏡頭
 function switchCamera() {
   if (!cameraList.length || !qrScanner) return;
-
-  qrScanner
-    .stop()
-    .then(() => {
-      currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
-      startCamera(cameraList[currentCameraIndex].id);
-    })
-    .catch(err => console.error("切換鏡頭失敗：", err));
+  qrScanner.stop().then(() => {
+    currentCameraIndex = (currentCameraIndex + 1) % cameraList.length;
+    startCamera(cameraList[currentCameraIndex].id);
+  }).catch(err => {
+    console.error("切換相機失敗", err);
+  });
 }
 
 // 成功掃描 QRCode
 function onScanSuccess(decodedText) {
-  console.log("QR 解碼成功:", decodedText);
+  // 嘗試從文字中抓取金額（發票通常會有 2-6 位數字）
+  const match = decodedText.match(/(\d{2,6})\s*(元|TX)?/);
+  if (match) {
+    const amount = parseInt(match[1]);
+    document.getElementById("txAmount").value = amount;
+    document.getElementById("txCategory").value = "餐飲"; // 可預設
+    document.getElementById("txNote").value = "掃描發票";
+    document.getElementById("txType").value = "支出";
 
-  try {
-    // 嘗試解析 JSON
-    const data = JSON.parse(decodedText);
-    if (data.expense && data.category) {
-      document.getElementById("txAmount").value = data.expense;
-      document.getElementById("txCategory").value = data.category;
-      document.getElementById("txNote").value = data.note || "";
-      document.getElementById("txType").value = "支出";
-      addTransaction();
-    }
-  } catch (e) {
-    // 嘗試抓金額
-    const match = decodedText.match(/(\d{2,6})\s*(元|TX)?/);
-    if (match) {
-      document.getElementById("txAmount").value = parseInt(match[1]);
-      document.getElementById("txCategory").value = "餐飲";
-      document.getElementById("txNote").value = "掃描發票";
-      document.getElementById("txType").value = "支出";
-      addTransaction();
-    } else {
-      console.warn("無法解析 QR 內容:", decodedText);
-      alert("QR Code 格式錯誤或無法辨識金額！");
-    }
+    // 呼叫 script.js 的 addTransaction()
+    addTransaction();
+
+  } else {
+    alert("無法辨識金額，請確認 QR Code 格式");
+    console.error("QR decode failed:", decodedText);
   }
 
-  stopQRScanner();
-}
-
-// 掃描失敗（每次偵測不到 QR Code 都會呼叫，可忽略）
-function onScanFailure(error) {
-  // console.log("掃描失敗:", error);
-}
-
-// 停止掃描
-function stopQRScanner() {
-  if (!qrScanner) return;
-  qrScanner
-    .stop()
-    .then(() => {
-      document.getElementById("qr-reader").style.display = "none";
-      document.getElementById("switch-camera-btn").style.display = "none";
-    })
-    .catch(err => console.error("停止掃描失敗：", err));
+  // 停止掃描並隱藏 UI
+  qrScanner.stop().then(() => {
+    document.getElementById("qr-reader").style.display = "none";
+    document.getElementById("switch-camera-btn").style.display = "none";
+  });
 }
 
 // 綁定按鈕
 document.getElementById("qrBtn").addEventListener("click", startQRScanner);
-document
-  .getElementById("switch-camera-btn")
-  .addEventListener("click", switchCamera);
+document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
