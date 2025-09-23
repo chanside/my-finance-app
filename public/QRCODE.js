@@ -31,6 +31,23 @@ function startQRScanner() {
   });
 }
 
+function getMonthData() {
+  const now = new Date();
+  const ym = now.toISOString().slice(0, 7); // yyyy-mm
+  const monthTx = state.tx.filter(t => t.date.slice(0, 7) === ym);
+
+  const income = monthTx
+    .filter(t => t.type === "收入")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const expense = monthTx
+    .filter(t => t.type === "支出")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  return { income, expense, monthTx };
+}
+
+
 // 切換鏡頭
 function switchCamera() {
   if (!cameraList.length || !qrScanner) return;
@@ -49,60 +66,33 @@ function switchCamera() {
 // 成功掃描 QRCode
 function onScanSuccess(decodedText) {
   try {
-    // 嘗試解析 JSON 格式
     const data = JSON.parse(decodedText);
     if (data.expense && data.category) {
       document.getElementById("txAmount").value = data.expense;
       document.getElementById("txCategory").value = data.category;
       document.getElementById("txNote").value = data.note || "";
-      document.getElementById("txType").value = "expense"; // ✅ 改成英文 (支出)
-      addTransaction(); // ✅ 需在 script.js 中定義
+      document.getElementById("txType").value = "支出"; // 中文支出
+      addTransaction();
     }
   } catch (e) {
-    // 如果不是 JSON，嘗試從文字中抓取金額
     const match = decodedText.match(/(\d{2,6})\s*(元|TX)?/);
     if (match) {
       document.getElementById("txAmount").value = parseInt(match[1]);
       document.getElementById("txCategory").value = "餐飲";
       document.getElementById("txNote").value = "掃描發票";
-      document.getElementById("txType").value = "expense"; // ✅ 改成英文
+      document.getElementById("txType").value = "支出";
       addTransaction();
     } else {
       alert("QR Code 格式錯誤或無法辨識金額！");
-      console.error("QR decode failed:", decodedText);
     }
   }
 
-  // 停止掃描並隱藏 UI
   qrScanner.stop().then(() => {
     document.getElementById("qr-reader").style.display = "none";
     document.getElementById("switch-camera-btn").style.display = "none";
   });
 }
 
-// 📌 addTransaction 函式：和手動新增交易共用
-function addTransaction() {
-  const date = document.getElementById("txDate").value || new Date().toISOString().slice(0, 10);
-  const type = document.getElementById("txType").value;
-  const amount = Number(document.getElementById("txAmount").value);
-  const category = document.getElementById("txCategory").value || (type === "income" ? "其他收入" : "其他支出");
-  const note = document.getElementById("txNote").value || "";
-
-  if (!amount || amount <= 0) {
-    alert("請輸入有效金額");
-    return;
-  }
-
-  // 使用全域 state（script.js 定義）
-  state.tx.push({ id: uid(), date, type, amount, category, note });
-  save();
-  render();
-
-  // 清空輸入欄位
-  document.getElementById("txAmount").value = "";
-  document.getElementById("txNote").value = "";
-  document.getElementById("txCategory").value = "";
-}
-
-// 綁定切換鏡頭按鈕（啟動按鈕用 HTML 的 onclick="startQRScanner()" 即可）
+// 綁定按鈕
+document.getElementById("qrBtn").addEventListener("click", startQRScanner);
 document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
