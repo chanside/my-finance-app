@@ -42,15 +42,24 @@ function startQRScanner() {
 
 // 開始指定相機
 function startCamera(cameraId) {
+  const config = {
+    fps: 10,
+    qrbox: 250,
+    aspectRatio: 1.0
+  };
+
+  // 如果有 cameraId，用 cameraId；否則用 facingMode 強制後鏡頭
+  const cameraConfig = cameraId ? { facingMode: { exact: "environment" } } : { facingMode: "environment" };
+
   qrScanner.start(
-    cameraId,
-    { fps: 10, qrbox: 250, aspectRatio: 1.0 },
+    cameraId || cameraConfig,
+    config,
     onScanSuccess
   ).catch(err => {
     console.error("QR 掃描啟動失敗", err);
+    alert("相機啟動失敗：" + err.message);
   });
 }
-
 // 切換鏡頭
 function switchCamera() {
   if (!cameraList.length || !qrScanner) return;
