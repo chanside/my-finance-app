@@ -17,7 +17,7 @@ function startQRScanner() {
       if (cameras && cameras.length) {
         cameraList = cameras;
 
-        // 預設後鏡頭
+        // 優先後鏡頭
         let cameraId = cameras[0].id;
         const backCam = cameras.find(cam =>
           /back|rear|environment|環境/i.test(cam.label)
@@ -85,10 +85,13 @@ function onScanSuccess(decodedText) {
   }
 
   // 掃描一次後自動停止
-  qrScanner.stop().then(() => {
-    document.getElementById("qr-reader").style.display = "none";
-    document.getElementById("switch-camera-btn").style.display = "none";
-  });
+  qrScanner
+    .stop()
+    .then(() => {
+      document.getElementById("qr-reader").style.display = "none";
+      document.getElementById("switch-camera-btn").style.display = "none";
+    })
+    .catch(err => console.error("停止掃描失敗", err));
 }
 
 // 綁定按鈕
