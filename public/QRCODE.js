@@ -1,11 +1,4 @@
-<!-- 先確保有載入套件 -->
-<script src="https://unpkg.com/html5-qrcode"></script>
 
-<div id="qr-reader" style="width:300px; display:none;"></div>
-<button id="qrBtn">開啟 QR 掃描</button>
-<button id="switch-camera-btn" style="display:none;">切換相機</button>
-
-<script>
 let qrScanner;
 let currentCameraIndex = 0;
 let cameraList = [];
@@ -122,4 +115,4 @@ function onScanSuccess(decodedText) {
 // 綁定按鈕
 document.getElementById("qrBtn").addEventListener("click", startQRScanner);
 document.getElementById("switch-camera-btn").addEventListener("click", switchCamera);
-</script>
+

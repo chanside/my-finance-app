@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>理財小幫手2</title>
   <link rel="stylesheet" href="index.css">
+  <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 <div class="container">
@@ -34,7 +35,11 @@
       <h1>理財小幫手</h1>
     </div>
     <div class="header-actions">
-      <button id="qrBtn" class="primary">啟用 QR Code</button>
+     
+<div id="qr-reader" style="width:300px; display:none;"></div>
+<button id="qrBtn">開啟 QR 掃描</button>
+<button id="switch-camera-btn" style="display:none;">切換相機</button>
+
       <button id="exportBtn" class="primary">匯出資料</button>
       <button id="importBtn" class="primary">匯入資料</button>
       <input type="file" id="fileInput" accept="application/json" hidden>
