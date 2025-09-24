@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>理財知識問答</title>
+  <link rel="stylesheet" href="Quiz.css">
+</head>
+<body>
+  <div class="container">
+<!-- 側邊選單 -->
+<nav id="sideMenu" class="side-menu">
+  <div class="side-header">
+    <h2>選單</h2>
+    <button id="closeMenu">&times;</button>
+  </div>
+  <ul>
+    <li><a href="/">首頁</a></li>
+    <li><a href="WeeklyTask.html">每周任務</a></li>
+    <li><a href="Quiz.html">知識問答</a></li>
+  </ul>
+</nav>
+<!-- 遮罩 -->
+<div id="overlay" class="overlay"></div>
+
+<!-- 漢堡按鈕 (加到 header.title 裡) -->
+<button id="menuBtn" class="menu-btn">&#9776;</button>
+    <h1>💰 理財知識小測驗</h1>
+    <p>答題後可立即查看正確答案，幫助你更好地管理財產！</p>
+
+    <div id="quiz"></div>
+
+    <button id="submitBtn">提交答案</button>
+    <div id="result"></div>
+  </div>
+
+  <script src="Quiz.js"></script>
+  <script src="SideMenu.js"></script>
+</body>
+</html>
