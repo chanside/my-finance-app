@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import fetch from "node-fetch";
 import bodyParser from "body-parser";
 
 // ⭐ 定義 __dirname
