@@ -144,6 +144,9 @@ app.post("/api/qrcode", async (req, res) => {
 app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
+  console.log("📩 收到前端:", { message, history });
+  console.log("🔑 OpenAI Key:", process.env.OPENAI_API_KEY ? "存在" : "沒找到");
+
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -152,7 +155,7 @@ app.post("/api/chat", async (req, res) => {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o-mini", // 你也可以換成 gpt-4.1
         messages: [
           { role: "system", content: "你是一個理財管理助手，提供務實的財務建議。" },
           ...(history || []),
@@ -162,7 +165,11 @@ app.post("/api/chat", async (req, res) => {
     });
 
     const data = await response.json();
-    console.log("🔍 OpenAI 回傳:", data);
+    console.log("🔍 OpenAI 回傳:", JSON.stringify(data, null, 2));
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message });
+    }
 
     const reply = data.choices?.[0]?.message?.content || "AI 沒有回應";
     res.json({ reply });
@@ -170,13 +177,4 @@ app.post("/api/chat", async (req, res) => {
     console.error("❌ AI API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
   }
-});
-
-// ================= 靜態資源 =================
-app.use(express.static(path.join(__dirname, "../public")));
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
-
-// ================= 啟動 =================
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
