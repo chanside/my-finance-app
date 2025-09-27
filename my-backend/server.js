@@ -53,13 +53,11 @@ const Goal = mongoose.model("Goal", goalSchema);
 // ================= API =================
 
 // ---- 交易紀錄 ----
-// 取得所有交易
 app.get("/api/transactions", async (req, res) => {
   const transactions = await Transaction.find().sort({ date: -1 });
   res.json(transactions);
 });
 
-// 新增交易
 app.post("/api/transactions", async (req, res) => {
   try {
     const transaction = new Transaction(req.body);
@@ -70,7 +68,6 @@ app.post("/api/transactions", async (req, res) => {
   }
 });
 
-// 刪除交易
 app.delete("/api/transactions/:id", async (req, res) => {
   try {
     await Transaction.findByIdAndDelete(req.params.id);
@@ -81,71 +78,101 @@ app.delete("/api/transactions/:id", async (req, res) => {
 });
 
 // ---- 預算 ----
-// 取得所有預算
-app.get("/api/budgets", async (req,res) => {
+app.get("/api/budgets", async (req, res) => {
   const budgets = await Budget.find();
   res.json(budgets);
 });
 
-// 設定/更新預算
-app.post("/api/budgets", async (req,res) => {
+app.post("/api/budgets", async (req, res) => {
   const { category, amount } = req.body;
-  if(!category || !amount) return res.status(400).json({ error: "分類或金額錯誤" });
+  if (!category || !amount) return res.status(400).json({ error: "分類或金額錯誤" });
 
   const budget = await Budget.findOneAndUpdate(
     { category },
     { amount },
-    { upsert:true, new:true }
+    { upsert: true, new: true }
   );
   res.json(budget);
 });
 
-// 刪除預算
-app.delete("/api/budgets/:id", async (req,res) => {
+app.delete("/api/budgets/:id", async (req, res) => {
   try {
     await Budget.findByIdAndDelete(req.params.id);
     res.json({ message: "刪除成功" });
-  } catch(err){ res.status(400).json({error:err.message}); }
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // ---- 儲蓄目標 ----
-// 取得所有目標
-app.get("/api/goals", async (req,res) => {
+app.get("/api/goals", async (req, res) => {
   const goals = await Goal.find();
   res.json(goals);
 });
 
-// 新增目標
-app.post("/api/goals", async (req,res) => {
+app.post("/api/goals", async (req, res) => {
   const { name, target } = req.body;
-  if(!name || !target) return res.status(400).json({error:"名稱或目標錯誤"});
+  if (!name || !target) return res.status(400).json({ error: "名稱或目標錯誤" });
   const goal = new Goal({ name, target });
   await goal.save();
   res.json(goal);
 });
 
-// 刪除目標
-app.delete("/api/goals/:id", async (req,res) => {
-  try{
+app.delete("/api/goals/:id", async (req, res) => {
+  try {
     await Goal.findByIdAndDelete(req.params.id);
-    res.json({ message:"刪除成功" });
-  }catch(err){ res.status(400).json({error:err.message}); }
+    res.json({ message: "刪除成功" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // ---- QR Code 上傳解析 ----
-app.post("/api/qrcode", async (req,res) => {
+app.post("/api/qrcode", async (req, res) => {
   try {
     const { type, amount, category, note, date } = req.body;
-    if(!amount || !type) return res.status(400).json({ error:"QR Code 資料不完整" });
+    if (!amount || !type) return res.status(400).json({ error: "QR Code 資料不完整" });
     const tx = new Transaction({ type, amount, category, note, date });
     await tx.save();
     res.json(tx);
-  } catch(err){ res.status(400).json({ error: err.message }); }
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ---- AI 理財助手 ----
+app.post("/api/chat", async (req, res) => {
+  const { message, history } = req.body;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "你是一個理財管理助手，提供務實的財務建議。" },
+          ...(history || []),
+          { role: "user", content: message },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "AI 沒有回應";
+    res.json({ reply });
+  } catch (err) {
+    console.error("❌ AI API 錯誤:", err);
+    res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
+  }
 });
 
 // ================= 靜態資源 =================
 app.use(express.static(path.join(__dirname, "../public")));
-app.get("/", (req,res) => res.sendFile(path.join(__dirname,"../public/HTML/index.html")));//設置首頁
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
 
 // ================= 啟動 =================
 app.listen(PORT, () => {
