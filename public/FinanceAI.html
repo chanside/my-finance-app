@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 理財助手</title>
+  <link rel="stylesheet" href="FinanceAI.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🤖 AI 理財管理助手</h1>
+    <p>輸入你的財務狀況，AI 會提供專屬建議</p>
+  </header>
+
+  <section class="input-section">
+    <textarea id="userInput" placeholder="輸入你的財務狀況，例如：收入 4 萬，支出 2.5 萬，存款 10 萬，目標是買房..."></textarea>
+    <button id="askAI" class="primary">💡 取得 AI 建議</button>
+  </section>
+
+  <section id="result" class="result-section" style="display:none;">
+    <h2>AI 建議</h2>
+    <p id="aiResponse"></p>
+  </section>
+</div>
+<script src="FinanceAI.js"></script>
+</body>
+</html>
