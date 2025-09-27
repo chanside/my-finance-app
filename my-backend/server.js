@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
-import fetch from "node-fetch";
 import bodyParser from "body-parser";
 
 // ⭐ 定義 __dirname
@@ -163,6 +162,8 @@ app.post("/api/chat", async (req, res) => {
     });
 
     const data = await response.json();
+    console.log("🔍 OpenAI 回傳:", data);
+
     const reply = data.choices?.[0]?.message?.content || "AI 沒有回應";
     res.json({ reply });
   } catch (err) {
