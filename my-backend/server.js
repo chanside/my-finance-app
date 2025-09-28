@@ -144,19 +144,32 @@ app.post("/api/qrcode", async (req, res) => {
 app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
+  console.log("📩 收到前端:", { message });
+
   try {
-    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-      },
-      body: JSON.stringify({
-        inputs: (history || []).map(h => h.content).join("\n") + "\nUser: " + message,
-      }),
-    });
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+        },
+        body: JSON.stringify({
+          inputs: `
+          你是一個理財管理助手，請根據使用者的需求給務實建議。
+          歷史對話: ${JSON.stringify(history || [])}
+          使用者: ${message}
+          助手:`,
+          parameters: { max_new_tokens: 200 },
+        }),
+      }
+    );
 
     const data = await response.json();
+    console.log("🔍 HF 回傳:", data);
+
+    // Hugging Face 回傳格式通常是 [{generated_text: "..."}]
     const reply = data[0]?.generated_text || "AI 沒有回應";
     res.json({ reply });
   } catch (err) {
