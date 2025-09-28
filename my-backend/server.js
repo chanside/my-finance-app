@@ -5,6 +5,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import bodyParser from "body-parser";
+import fetch from "node-fetch";
+
 
 // ⭐ 定義 __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -140,44 +142,29 @@ app.post("/api/qrcode", async (req, res) => {
   }
 });
 
-// ---- AI 理財助手 ----
 app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${process.env.HF_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "你是一個理財管理助手，提供務實的財務建議。" },
-          ...(history || []),
-          { role: "user", content: message },
-        ],
+        inputs: (history || []).map(h => h.content).join("\n") + "\nUser: " + message,
       }),
     });
 
     const data = await response.json();
-    console.log("🔍 OpenAI 回傳:", data);
-
-    const reply = data.choices?.[0]?.message?.content || "AI 沒有回應";
+    const reply = data[0]?.generated_text || "AI 沒有回應";
     res.json({ reply });
   } catch (err) {
-    console.error("❌ AI API 錯誤:", err);
+    console.error("❌ Hugging Face API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
   }
 });
-
-// ================= 靜態資源 =================
-app.use(express.static(path.join(__dirname, "../public")));
-app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
-
-// ================= 啟動 =================
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
-console.log("🔑 OpenAI Key:", process.env.OPENAI_API_KEY ? "存在" : "沒找到");
