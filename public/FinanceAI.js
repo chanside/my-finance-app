@@ -2,7 +2,7 @@ const chatBox = document.getElementById("chatBox");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 
-let chatHistory = []; // 用來存放對話歷史
+let chatHistory = []; // 儲存對話歷史
 
 // 畫面顯示訊息
 function addMessage(sender, text) {
@@ -13,16 +13,18 @@ function addMessage(sender, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// 呼叫後端 API，傳給 OpenAI
+// 呼叫後端 API
 async function askAI(question) {
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: question, history: chatHistory })
+      body: JSON.stringify({ message: question, history: chatHistory }),
     });
 
     const data = await res.json();
+    console.log("AI 回傳:", data);
+
     if (data.reply) {
       chatHistory.push({ role: "assistant", content: data.reply });
       return data.reply;
@@ -35,7 +37,7 @@ async function askAI(question) {
   }
 }
 
-// 送出訊息
+// 點擊送出
 sendBtn.addEventListener("click", async () => {
   const text = userInput.value.trim();
   if (!text) return;
@@ -48,6 +50,10 @@ sendBtn.addEventListener("click", async () => {
   addMessage("ai", aiReply);
 });
 
-userInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendBtn.click();
+// 按 Enter 送出（Shift+Enter 換行）
+userInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendBtn.click();
+  }
 });
