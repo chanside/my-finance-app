@@ -6,8 +6,6 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import bodyParser from "body-parser";
 
-
-
 // ⭐ 定義 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -165,6 +163,14 @@ app.post("/api/chat", async (req, res) => {
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
   }
 });
+
+
+// ================= 靜態資源 =================
+app.use(express.static(path.join(__dirname, "../public")));
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
+
+// ================= 啟動 =================
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+console.log("🔑 OpenAI Key:", process.env.OPENAI_API_KEY ? "存在" : "沒找到");
