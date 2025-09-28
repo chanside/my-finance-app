@@ -139,7 +139,7 @@ app.post("/api/qrcode", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-
+// ---- Chat API ----
 app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
@@ -151,19 +151,21 @@ app.post("/api/chat", async (req, res) => {
         "Authorization": `Bearer ${process.env.HF_API_KEY}`,
       },
       body: JSON.stringify({
-        inputs: (history || []).map(h => h.content).join("\n") + "\nUser: " + message,
+        inputs: (history || []).map(h => `${h.role}: ${h.content}`).join("\n") + `\nUser: ${message}`,
       }),
     });
 
     const data = await response.json();
-    const reply = data[0]?.generated_text || "AI 沒有回應";
+    console.log("HF 回傳:", data);
+
+    // Hugging Face 會回傳陣列
+    const reply = data[0]?.generated_text?.replace(/User:.*/g, "").trim() || "⚠️ AI 沒有回應";
     res.json({ reply });
   } catch (err) {
     console.error("❌ Hugging Face API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
   }
 });
-
 
 // ================= 靜態資源 =================
 app.use(express.static(path.join(__dirname, "../public")));
