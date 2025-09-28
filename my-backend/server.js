@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import bodyParser from "body-parser";
-import fetch from "node-fetch";
+
 
 
 // ⭐ 定義 __dirname
