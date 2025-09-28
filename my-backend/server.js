@@ -140,40 +140,44 @@ app.post("/api/qrcode", async (req, res) => {
   }
 });
 
-// ---- AI 理財助手 (Hugging Face 版本) ----
+// ---- AI 理財助手 ----
 app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
-  console.log("📩 收到前端:", { message });
-
   try {
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-        },
-        body: JSON.stringify({
-          inputs: `
-          你是一個理財管理助手，請根據使用者的需求給務實建議。
-          歷史對話: ${JSON.stringify(history || [])}
-          使用者: ${message}
-          助手:`,
-          parameters: { max_new_tokens: 200 },
-        }),
-      }
-    );
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "你是一個理財管理助手，提供務實的財務建議。" },
+          ...(history || []),
+          { role: "user", content: message },
+        ],
+      }),
+    });
 
     const data = await response.json();
-    console.log("🔍 HF 回傳:", data);
+    console.log("🔍 OpenAI 回傳:", data);
 
-    // Hugging Face 回傳格式通常是 [{generated_text: "..."}]
-    const reply = data[0]?.generated_text || "AI 沒有回應";
+    const reply = data.choices?.[0]?.message?.content || "AI 沒有回應";
     res.json({ reply });
   } catch (err) {
-    console.error("❌ Hugging Face API 錯誤:", err);
+    console.error("❌ AI API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
   }
 });
+
+// ================= 靜態資源 =================
+app.use(express.static(path.join(__dirname, "../public")));
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../public/index.html")));
+
+// ================= 啟動 =================
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+console.log("🔑 OpenAI Key:", process.env.OPENAI_API_KEY ? "存在" : "沒找到");
