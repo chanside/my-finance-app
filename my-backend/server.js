@@ -144,7 +144,7 @@ app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
   try {
-const response = await fetch("https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill", {
+const response = await fetch("https://api-inference.huggingface.co/models/google/flan-t5-base", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -154,15 +154,21 @@ const response = await fetch("https://api-inference.huggingface.co/models/facebo
     inputs: (history || []).map(h => `${h.role}: ${h.content}`).join("\n") + `\nUser: ${message}`,
   }),
 });
-
-  const data = await response.json();
+if (!response.ok) {
+  const errText = await response.text();
+  console.error("HF API HTTP 錯誤:", response.status, errText);
+  return res.status(500).json({ error: `HF API 錯誤: ${response.status}` });
+}
+const data = await response.json();
 console.log("HF 回傳:", data);
-
 let reply = "⚠️ AI 沒有回應";
 if (Array.isArray(data) && data[0]?.generated_text) {
-  reply = data[0].generated_text.replace(/User:.*/g, "").trim();
+  reply = data[0].generated_text.trim();
+} else if (data.generated_text) {
+  reply = data.generated_text.trim();
 }
 res.json({ reply });
+
   } catch (err) {
     console.error("❌ Hugging Face API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
