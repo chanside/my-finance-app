@@ -5,7 +5,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import bodyParser from "body-parser";
-import fetch from "node-fetch"; // 若使用 Node.js 18+ 可省略
 
 // ================= 設定目錄與 dotenv =================
 const __filename = fileURLToPath(import.meta.url);
