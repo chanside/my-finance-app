@@ -144,16 +144,19 @@ app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
   try {
-const response = await fetch("https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-  },
-  body: JSON.stringify({
-    inputs: (history || []).map(h => `${h.role}: ${h.content}`).join("\n") + `\nUser: ${message}`,
-  }),
-});
+const response = await fetch(
+  "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+    },
+    body: JSON.stringify({ inputs: message }),
+  }
+);
+
+
 
 if (!response.ok) {
   const errText = await response.text();
@@ -185,3 +188,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
 console.log("🔑 OpenAI Key:", process.env.OPENAI_API_KEY ? "存在" : "沒找到");
+console.log("HF Key:", process.env.HF_API_KEY ? "已載入" : "缺失");
+
