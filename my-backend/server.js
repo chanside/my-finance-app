@@ -144,23 +144,25 @@ app.post("/api/chat", async (req, res) => {
   const { message, history } = req.body;
 
   try {
-    const response = await fetch("https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-      },
-      body: JSON.stringify({
-        inputs: (history || []).map(h => `${h.role}: ${h.content}`).join("\n") + `\nUser: ${message}`,
-      }),
-    });
+    const response = await fetch("https://api-inference.huggingface.co/models/google/flan-t5-base", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+  },
+  body: JSON.stringify({
+    inputs: (history || []).map(h => `${h.role}: ${h.content}`).join("\n") + `\nUser: ${message}`,
+  }),
+});
 
-    const data = await response.json();
-    console.log("HF 回傳:", data);
+  const data = await response.json();
+console.log("HF 回傳:", data);
 
-    // Hugging Face 會回傳陣列
-    const reply = data[0]?.generated_text?.replace(/User:.*/g, "").trim() || "⚠️ AI 沒有回應";
-    res.json({ reply });
+let reply = "⚠️ AI 沒有回應";
+if (Array.isArray(data) && data[0]?.generated_text) {
+  reply = data[0].generated_text.replace(/User:.*/g, "").trim();
+}
+res.json({ reply });
   } catch (err) {
     console.error("❌ Hugging Face API 錯誤:", err);
     res.status(500).json({ error: "伺服器錯誤，請稍後再試" });
