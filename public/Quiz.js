@@ -1,8 +1,9 @@
+/* ================== 題庫設定 ================== */
 const quizData = [
   {
     question: "建立緊急備用金的主要目的為何？",
     options: ["應付突發事件", "用來投資股票", "購買奢侈品", "支付娛樂費用"],
-    answer: 0
+    answer: 0 // 正確答案的索引值
   },
   {
     question: "一般建議緊急備用金應該準備幾個月的生活費？",
@@ -36,59 +37,73 @@ const quizData = [
   }
 ];
 
+/* ================== DOM 取得 ================== */
 const quizContainer = document.getElementById("quiz");
 const resultContainer = document.getElementById("result");
 const submitBtn = document.getElementById("submitBtn");
 
-// 每次抽幾題
-const QUESTIONS_PER_ROUND = 3;
-let currentQuestions = [];
+/* ================== 遊戲參數 ================== */
+const QUESTIONS_PER_ROUND = 3; // 每次隨機抽出的題目數
+let currentQuestions = [];     // 暫存當回合的題目
 
-// 隨機打亂陣列
+/* ================== 工具函式 ================== */
+// 隨機打亂陣列 (洗牌演算法簡化版)
 function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
 }
 
-// 抽題目
+// 隨機抽出指定數量的題目
 function getRandomQuestions() {
   return shuffle([...quizData]).slice(0, QUESTIONS_PER_ROUND);
 }
 
-// 載入題目
+/* ================== 載入題目 ================== */
 function loadQuiz() {
+  // 重新抽題
   currentQuestions = getRandomQuestions();
+
+  // 將題目與選項動態插入頁面
   quizContainer.innerHTML = currentQuestions.map((q, index) => {
     return `
       <div class="question">
         <h3>${q.question}</h3>
         ${shuffle(q.options.map((opt, i) => `
           <label>
-            <input type="radio" name="q${index}" value="${i}"> ${opt}
+            <input type="radio" name="q${index}" value="${i}">
+            ${opt}
           </label>
         `)).join("")}
       </div>
     `;
   }).join("");
-  resultContainer.innerHTML = ""; // 清空上次結果
+
+  // 清空上次的答題結果
+  resultContainer.innerHTML = "";
 }
 
-// 檢查答案
+/* ================== 檢查答案 ================== */
 function checkAnswers() {
   let score = 0;
+
   currentQuestions.forEach((q, index) => {
+    // 找出該題被選中的答案
     const selected = document.querySelector(`input[name="q${index}"]:checked`);
-    if (selected && q.options[parseInt(selected.value)] === q.options[q.answer]) {
+
+    // 若有作答，檢查是否正確
+    if (selected && parseInt(selected.value) === q.answer) {
       score++;
     }
   });
 
+  // 顯示分數
   resultContainer.innerHTML = `✅ 你答對了 ${score} / ${currentQuestions.length} 題`;
 
-  // 2 秒後自動換題
+  // 2 秒後自動重新抽題 (增加遊戲感)
   setTimeout(loadQuiz, 2000);
 }
 
+/* ================== 事件監聽 ================== */
 submitBtn.addEventListener("click", checkAnswers);
 
-// 初始化
+/* ================== 初始化 ================== */
 loadQuiz();
