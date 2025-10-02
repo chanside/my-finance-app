@@ -1,3 +1,4 @@
+/* ================= 全域設定 ================= */
 body {
   font-family: "Microsoft JhengHei", sans-serif;
   background: #f9fafb;
@@ -14,25 +15,28 @@ body {
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+/* ================= 標題 ================= */
 h1 {
   text-align: center;
   color: #2c3e50;
 }
 
+/* ================= 題目樣式 ================= */
 .question {
   margin-bottom: 20px;
 }
-
 .question h3 {
   color: #333;
 }
 
+/* 選項 */
 label {
   display: block;
   margin: 6px 0;
   cursor: pointer;
 }
 
+/* ================= 按鈕 ================= */
 button {
   display: block;
   margin: 20px auto;
@@ -43,23 +47,24 @@ button {
   color: white;
   font-size: 16px;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
-
 button:hover {
   background: #357ab8;
 }
 
+/* ================= 結果區 ================= */
 #result {
   margin-top: 20px;
   font-size: 18px;
   text-align: center;
 }
 
-/* ===== 側邊選單 ===== */
+/* ================= 側邊選單 ================= */
 .side-menu {
   position: fixed;
   top: 0;
-  left: -280px;
+  left: -280px; /* 預設隱藏 */
   width: 240px;
   height: 100%;
   background: linear-gradient(180deg, #ffffff, #f5faff);
@@ -71,8 +76,9 @@ button:hover {
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
 }
-.side-menu.active { left: 0; }
+.side-menu.active { left: 0; } /* 顯示時 */
 
+/* 選單標題列 */
 .side-header {
   display: flex;
   justify-content: space-between;
@@ -91,6 +97,7 @@ button:hover {
   color: #666;
 }
 
+/* 選單清單 */
 .side-menu ul {
   list-style: none;
   padding: 0;
@@ -113,7 +120,7 @@ button:hover {
   color: #fff;
 }
 
-/* 遮罩 */
+/* ================= 遮罩 ================= */
 .overlay {
   position: fixed;
   top: 0; left: 0;
@@ -124,8 +131,7 @@ button:hover {
 }
 .overlay.active { display: block; }
 
-
-/* 漢堡按鈕 */
+/* ================= 漢堡按鈕 ================= */
 .menu-btn {
   position: fixed; /* 固定在畫面左上角 */
   top: 20px;
@@ -153,11 +159,12 @@ button:hover {
   transform: scale(0.95);
 }
 
-
-/* ===== 手機版覆蓋 ===== */
+/* ================= 手機版調整 (RWD) ================= */
 @media (max-width: 768px) {
   body { padding: 0; }
   .container { padding: 10px; max-width: 480px; margin:auto; }
+
+  /* 這些屬性來自主頁共用，保留方便響應式設計 */
   header { flex-direction: column; gap: 10px; }
   .header-actions { flex-wrap: wrap; gap: 5px; justify-content: center; }
   .grid.cards { display: flex; flex-direction: column; gap: 10px; }
@@ -166,6 +173,7 @@ button:hover {
   .form-actions { flex-direction: column; gap: 8px; }
   table.table { display: block; overflow-x: auto; }
   table.table th, table.table td { min-width: 80px; text-align: left; }
+
   #qr-reader { width: 100% !important; max-width: 360px; margin:auto; }
   canvas { width: 100% !important; height: auto !important; }
 }
