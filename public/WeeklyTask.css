@@ -1,29 +1,59 @@
-/* ===== 每週任務 ===== */
+/* =================== 變數 & 全域設定 =================== */
+/* 把常用顏色 / 間距放到 :root，方便日後調整主題 */
+:root {
+  --primary: #0668ca;
+  --accent: #4a90e2;
+  --bg-start: #3a97da;
+  --bg-end: #f9f9f9;
+  --card-bg: rgba(255,255,255,0.9);
+  --muted: #888;
+  --shadow-1: 0 4px 8px rgba(0,0,0,0.1);
+  --shadow-2: 0 6px 18px rgba(0,0,0,0.12);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+}
 
-/* 背景美化 */
+/* Box sizing 與基本排版 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: linear-gradient(135deg, #3a97da, #f9f9f9);
+
+  /* 背景漸層 */
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
   background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #222;
 }
 
-/* 容器加點陰影與白色底 */
+/* 減少動態效果（尊重使用者設定） */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* =================== 容器 =================== */
 .container {
   max-width: 1000px;
-  margin: auto;
+  margin: 32px auto;
   padding: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
 }
 
-
+/* =================== 每週任務卡片 (#weeklyTasks) =================== */
+/* 卡片的主要風格：漸層、圓角、懸浮效果 */
 #weeklyTasks {
   background: linear-gradient(135deg, #fdfdfd, #f5faff);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 6px 18px rgba(0,0,0,0.08);
   padding: 20px;
   margin-top: 20px;
@@ -31,34 +61,40 @@ body {
 }
 #weeklyTasks:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-2);
 }
+
+/* 區塊標題：帶 Icon 標記 */
 #weeklyTasks h2 {
-  margin-top: 0;
-  color: #0668ca;
+  margin: 0 0 10px 0;
+  color: var(--primary);
   font-size: 20px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 #weeklyTasks h2::before {
   content: "✅";
-  font-size: 20px;
+  font-size: 18px;
 }
 
+/* =================== 任務清單 =================== */
+/* 無序列表外觀 */
 .task-list {
   list-style: none;
   padding: 0;
   margin: 15px 0;
 }
+
+/* 每一列任務的樣式 */
 .task-list li {
   padding: 12px 10px;
   border-bottom: 1px dashed #ddd;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-between; /* 左邊文字、右邊控制（例如刪除按鈕） */
   font-size: 15px;
-  transition: background 0.2s;
+  transition: background 0.15s ease, transform 0.08s ease;
 }
 .task-list li:hover {
   background: #f0f8ff;
@@ -66,29 +102,56 @@ body {
 .task-list li:last-child {
   border-bottom: none;
 }
+
+/* checkbox 放大與樣式（現代瀏覽器支援 accent-color） */
 .task-list input[type="checkbox"] {
-  transform: scale(1.3);
-  margin-right: 8px;
-  accent-color: #4a90e2; /* 現代瀏覽器會支援 */
+  transform: scale(1.25);
+  margin-right: 12px;
+  accent-color: var(--accent);
+  vertical-align: middle;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid #ccc;
 }
 
-/* 已完成效果 */
+/* 注意：下面的樣式假設 HTML 結構為：
+   <li>
+     <label>
+       <input type="checkbox"> <span class="task-text">任務描述</span>
+     </label>
+     <div class="actions">...</div>
+   </li>
+   若你的 HTML 不同，請依實際 DOM 做微調。 */
+
+/* 已完成的任務文字樣式（勾選後） */
+.task-list input[type="checkbox"]:checked + .task-text,
 .task-list input[type="checkbox"]:checked + span {
   text-decoration: line-through;
-  color: #888;
+  color: var(--muted);
 }
 
-/* ===== 側邊選單 ===== */
+/* 當 checkbox 放在 label 內，使用 :has() 可選擇性加強（若支援） */
+/* li:has(input[type="checkbox"]:checked) .task-text { ... } */
+/* 註：:has() 在部分瀏覽器仍為實驗性功能，視支援情況使用。 */
+
+/* 對鍵盤使用者友善的 focus 樣式 */
+.task-list input[type="checkbox"]:focus-visible {
+  outline: 3px solid rgba(74,144,226,0.2);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* =================== 側邊選單（共用樣式） =================== */
 .side-menu {
   position: fixed;
   top: 0;
-  left: -280px;
+  left: -280px; /* 預設隱藏於左側 */
   width: 240px;
   height: 100%;
   background: linear-gradient(180deg, #ffffff, #f5faff);
   box-shadow: 2px 0 10px rgba(0,0,0,0.15);
   overflow-y: auto;
-  transition: left 0.3s ease;
+  transition: left 0.28s cubic-bezier(.2,.8,.2,1);
   z-index: 1000;
   padding: 20px 15px;
   border-top-right-radius: 12px;
@@ -104,7 +167,7 @@ body {
 .side-header h2 {
   font-size: 18px;
   margin: 0;
-  color: #0668ca;
+  color: var(--primary);
 }
 .side-header button {
   font-size: 22px;
@@ -114,14 +177,13 @@ body {
   color: #666;
 }
 
+/* 選單連結 */
 .side-menu ul {
   list-style: none;
   padding: 0;
   margin: 20px 0;
 }
-.side-menu li {
-  margin: 12px 0;
-}
+.side-menu li { margin: 12px 0; }
 .side-menu a {
   text-decoration: none;
   color: #333;
@@ -129,35 +191,34 @@ body {
   display: block;
   padding: 8px 10px;
   border-radius: 8px;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.18s, color 0.18s;
 }
 .side-menu a:hover {
-  background: #0668ca;
+  background: var(--primary);
   color: #fff;
 }
 
-/* 遮罩 */
+/* =================== 遮罩 =================== */
 .overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
   background: rgba(0,0,0,0.45);
-  display: none;
+  display: none; /* 透過 JS 控制 .active 顯示 */
   z-index: 900;
 }
 .overlay.active { display: block; }
 
-
-/* 漢堡按鈕 */
+/* =================== 漢堡按鈕 =================== */
 .menu-btn {
-  position: fixed; /* 固定在畫面左上角 */
+  position: fixed;
   top: 20px;
   left: 20px;
   width: 50px;
   height: 50px;
   border: none;
   border-radius: 50%;
-  background: #0668ca;
+  background: var(--primary);
   color: #fff;
   font-size: 26px;
   cursor: pointer;
@@ -165,44 +226,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s, transform 0.2s;
+  transition: background 0.25s, transform 0.18s;
   z-index: 1100;
 }
 .menu-btn:hover {
   background: #0457a8;
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.06) rotate(4deg);
 }
 .menu-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
-
-/* ===== 手機版覆蓋 ===== */
-@media (max-width: 768px) {
-  body { padding: 0; }
-  .container { padding: 10px; max-width: 480px; margin:auto; }
-  header { flex-direction: column; gap: 10px; }
-  .header-actions { flex-wrap: wrap; gap: 5px; justify-content: center; }
-  .grid.cards { display: flex; flex-direction: column; gap: 10px; }
-  .panel { display: flex; flex-direction: column; gap: 15px; }
-  .form-row { flex-direction: column; gap: 8px; }
-  .form-actions { flex-direction: column; gap: 8px; }
-  table.table { display: block; overflow-x: auto; }
-  table.table th, table.table td { min-width: 80px; text-align: left; }
-  #qr-reader { width: 100% !important; max-width: 360px; margin:auto; }
-  canvas { width: 100% !important; height: auto !important; }
-}
-
-/* 等級系統 */
+/* =================== 等級系統（Level System） =================== */
 #levelSystem {
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
   padding: 20px;
   margin-top: 20px;
   text-align: center;
 }
 
+/* 進度條容器 */
 .progress-bar {
   width: 100%;
   height: 20px;
@@ -212,9 +257,21 @@ body {
   margin-top: 10px;
 }
 
+/* 動畫式進度（由 JS 控制 .progress 的寬度）*/
 .progress {
   height: 100%;
-  width: 0;
-  background: linear-gradient(90deg, #4a90e2, #6fcf97);
-  transition: width 0.3s ease;
+  width: 0; /* 由 JS 變更寬度，例如 progress.style.width = '45%'; */
+  background: linear-gradient(90deg, var(--accent), #6fcf97);
+  transition: width 0.35s ease;
+}
+
+/* =================== 響應式（RWD） =================== */
+@media (max-width: 768px) {
+  body { padding: 0; }
+  .container { padding: 12px; max-width: 480px; margin: 16px auto; }
+
+  /* 保留讓其他共用元件能夠響應 */
+  #weeklyTasks { padding: 16px; }
+  .task-list li { font-size: 14px; padding: 10px; }
+  .menu-btn { top: 14px; left: 14px; width: 46px; height: 46px; }
 }
