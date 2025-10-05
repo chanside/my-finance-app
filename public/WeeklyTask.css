@@ -25,7 +25,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background: url("../image/aHR0cHM6Ly9iLnN0YWJsZWNvZy5jb20vNzBhMDg2YjMtNDFlMy00ZmMyLTk0ZjQtYTVmNTZkYzk1M2FmLmpwZWc.webp") center/cover no-repeat fixed;
+  background: url("https://img.stablecog.com/insecure/1920w/aHR0cHM6Ly9iLnN0YWJsZWNvZy5jb20vNzBhMDg2YjMtNDFlMy00ZmMyLTk0ZjQtYTVmNTZkYzk1M2FmLmpwZWc.webp") center/cover no-repeat fixed;
 }
 
 /* 減少動態效果（尊重使用者設定） */
