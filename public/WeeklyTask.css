@@ -25,13 +25,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-
-  /* 背景漸層 */
-  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
-  background-attachment: fixed;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #222;
+  background: url("../image/aHR0cHM6Ly9iLnN0YWJsZWNvZy5jb20vNzBhMDg2YjMtNDFlMy00ZmMyLTk0ZjQtYTVmNTZkYzk1M2FmLmpwZWc.webp") center/cover no-repeat fixed;
 }
 
 /* 減少動態效果（尊重使用者設定） */
