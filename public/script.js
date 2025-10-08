@@ -47,6 +47,10 @@ const chart = new Chart(ctx, {
   }
 });
 
+window.addEventListener("chatbaseWidgetReady", function () {
+  console.log("✅ Chatbase 已準備就緒，可接收訊息");
+});
+
 // ---------------- 格式化日期 ----------------
 function formatDate(date) {
   const d = new Date(date);
@@ -137,16 +141,44 @@ function addTransaction(tx=null) {
 
   if(!amount || amount<=0) return;
 
-  transactions.push({ type, amount, category, date, note });
+  const newTx = { type, amount, category, date, note };
+  transactions.push(newTx);
   renderTable();
   updateSummary();
 
-  // 清空欄位
+ // 清空欄位
   txAmount.value = '';
   txCategory.value = '';
   txDate.value = '';
   txNote.value = '';
+
+  // ✅ 傳送到 Chatbase
+  const chatMsg = `我剛新增了一筆${type}交易：金額 ${amount} 元，分類 ${category}，備註 ${note || '無'}，日期 ${date}`;
+  sendToChatbase(chatMsg);
 }
+
+// ---------------- 傳送訊息到 Chatbase（含等待機制） ----------------
+function sendToChatbase(message) {
+  if (!message) return;
+
+  // 每 500ms 檢查 Chatbase 是否載入完成
+  const checkInterval = setInterval(() => {
+    if (window.ChatbaseWidget && typeof window.ChatbaseWidget.sendUserMessage === "function") {
+      clearInterval(checkInterval);
+      window.ChatbaseWidget.sendUserMessage(message);
+      console.log("✅ 已將訊息傳給 Chatbase 助理：", message);
+    } else {
+      console.log("⌛ 等待 Chatbase 載入中...");
+    }
+  }, 500);
+
+  // 最多等 10 秒
+  setTimeout(() => clearInterval(checkInterval), 10000);
+}
+
+window.addEventListener("chatbaseWidgetReady", function () {
+  console.log("✅ Chatbase 已成功載入並可接收訊息！");
+});
 
 // ---------------- 刪除交易 ----------------
 function deleteTx(index) {
