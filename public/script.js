@@ -157,28 +157,44 @@ function addTransaction(tx=null) {
   sendToChatbase(chatMsg);
 }
 
-// ---------------- 傳送訊息到 Chatbase（含等待機制） ----------------
-function sendToChatbase(message) {
+  // ---------------- 傳送訊息到 Chatbase（含等待機制） ----------------
+async function sendToChatbase(message) {
   if (!message) return;
 
-  // 每 500ms 檢查 Chatbase 是否載入完成
-  const checkInterval = setInterval(() => {
-    if (window.ChatbaseWidget && typeof window.ChatbaseWidget.sendUserMessage === "function") {
-      clearInterval(checkInterval);
-      window.ChatbaseWidget.sendUserMessage(message);
-      console.log("✅ 已將訊息傳給 Chatbase 助理：", message);
-    } else {
-      console.log("⌛ 等待 Chatbase 載入中...");
-    }
-  }, 500);
+  const chatbotId = "zU41hSWsbfHyI-xOQMIKE"; // ✅ 用這個名稱（Chatbase新版是 chatbotId）
+  const apiKey = "15a8ad9c-b7b8-4a92-827c-b4a661d62895"; // ✅ 你的 Chatbase API key
+  const apiUrl = "https://www.chatbase.co/api/v1/chat";
 
-  // 最多等 10 秒
-  setTimeout(() => clearInterval(checkInterval), 10000);
+  try {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`, // ✅ 一定要加 Bearer
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+        chatbotId: chatbotId, // ✅ 改成這個
+        stream: false,
+      }),
+    });
+
+    const data = await res.json();
+    console.log("✅ Chatbase 回應：", data);
+    // ✅ 如果 Chatbase 回應有文字，就顯示在 widget 裡
+if (data.text && window.ChatbaseWidget && typeof window.ChatbaseWidget.sendUserMessage === "function") {
+  window.ChatbaseWidget.sendUserMessage(`AI 回覆：${data.text}`);
 }
 
-window.addEventListener("chatbaseWidgetReady", function () {
-  console.log("✅ Chatbase 已成功載入並可接收訊息！");
-});
+  } catch (err) {
+    console.error("❌ 傳送失敗：", err);
+  }
+}
 
 // ---------------- 刪除交易 ----------------
 function deleteTx(index) {
