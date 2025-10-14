@@ -47,9 +47,10 @@ const chart = new Chart(ctx, {
   }
 });
 
-window.addEventListener("chatbaseWidgetReady", function () {
+window.addEventListener("chatbase:ready", function () {
   console.log("✅ Chatbase 已準備就緒，可接收訊息");
 });
+
 
 // ---------------- 格式化日期 ----------------
 function formatDate(date) {
@@ -157,6 +158,7 @@ function addTransaction(tx=null) {
   sendToChatbase(chatMsg);
 }
 
+
   // ---------------- 傳送訊息到 Chatbase（含等待機制） ----------------
 async function sendToChatbase(message) {
   if (!message) return;
@@ -186,15 +188,17 @@ async function sendToChatbase(message) {
 
     const data = await res.json();
     console.log("✅ Chatbase 回應：", data);
-    // ✅ 如果 Chatbase 回應有文字，就顯示在 widget 裡
-if (data.text && window.ChatbaseWidget && typeof window.ChatbaseWidget.sendUserMessage === "function") {
-  window.ChatbaseWidget.sendUserMessage(`AI 回覆：${data.text}`);
+  // ✅ 如果 Chatbase 回應有文字，就顯示在 widget 裡
+if (data.text && window.ChatbaseWidget && typeof window.ChatbaseWidget.sendBotMessage === "function") {
+  window.ChatbaseWidget.sendBotMessage(data.text);
 }
+
 
   } catch (err) {
     console.error("❌ 傳送失敗：", err);
   }
 }
+
 
 // ---------------- 刪除交易 ----------------
 function deleteTx(index) {

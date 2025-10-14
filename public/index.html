@@ -157,29 +157,6 @@
   </div>
 </div>
 
-<!-- ===== Chatbase 客服嵌入 ===== -->
-<script>
-  // Chatbase 初始化設定
-  window.chatbaseConfig = {
-    chatbotId: "zU41hSWsbfHyI-xOQMIKE", // ✅ 你的 Chatbase ID
-  };
-
-  (function() {
-    const script = document.createElement("script");
-    script.src = "https://www.chatbase.co/embed.min.js";
-    script.defer = true;
-    script.onload = () => console.log("✅ Chatbase 已載入完成");
-    script.onerror = () => console.error("❌ Chatbase 載入失敗");
-    document.body.appendChild(script);
-  })();
-
-  // 🔔 正確事件名稱：chatbase:ready
-  window.addEventListener("chatbase:ready", function () {
-    console.log("✅ Chatbase Widget 已準備就緒，可接收訊息");
-  });
-</script>
-
-
 <!-- ===== QR Scanner 容器 ===== -->
 <div id="qrScanner" style="display:none; margin-top:15px; text-align:center;">
   <div id="qr-reader"></div>
@@ -194,6 +171,7 @@
 <script src="script.js"></script>
 <script src="ImportExport.js"></script>
 <script src="SideMenu.js"></script>
+<script src="Chatbase.js"></script>
 
 
 <!-- From Uiverse.io by Juanes200122 --> 
