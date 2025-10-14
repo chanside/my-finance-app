@@ -1,6 +1,6 @@
 // ✅ Chatbase 初始化設定
 window.chatbaseConfig = {
-  chatbotId: "zU41hSWsbfHyI-xOQMIKE", // 你的 Chatbase ID
+  chatbotId: "zU41hSWsbfHyI-xOQMIKE", // ← 這裡是你的 chatbot ID
   version: "v1",
 };
 
