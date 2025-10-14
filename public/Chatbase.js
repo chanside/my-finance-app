@@ -1,21 +1,23 @@
 (function () {
+  console.log("🚀 Chatbase 啟動中...");
+
   // ✅ 1️⃣ Chatbase 設定（一定要在最前）
   window.chatbaseConfig = {
     chatbotId: "zU41hSWsbfHyI-xOQMIKE",
     version: "v1",
-    theme: "light", // 🔥 防止 undefined
+    theme: "light",
   };
 
-  // ✅ 2️⃣ 確保 DOM 載入後才插入 SDK
+  // ✅ 2️⃣ 插入 SDK（延遲以確保設定已存在）
   function loadChatbase() {
-    if (document.getElementById("chatbase-script")) {
+    const existing = document.getElementById("chatbase-script");
+    if (existing) {
       console.log("⚙️ Chatbase SDK 已存在，跳過重新載入");
       return;
     }
 
-    // ⏰ 等待 body 存在
     if (!document.body) {
-      console.warn("⏳ Chatbase 等待 document.body 準備完成...");
+      console.warn("⏳ 等待 document.body 準備完成...");
       return setTimeout(loadChatbase, 300);
     }
 
@@ -23,28 +25,38 @@
     script.id = "chatbase-script";
     script.src = "https://www.chatbase.co/embed.min.js";
     script.defer = true;
-    script.onload = () => console.log("✅ Chatbase 已載入完成");
-    script.onerror = (e) => console.error("❌ Chatbase 載入失敗：", e);
+
+    script.onload = () => {
+      console.log("✅ Chatbase SDK 已載入完成");
+      // 延遲檢查初始化
+      setTimeout(() => {
+        if (window.ChatbaseWidget) {
+          console.log("✅ Chatbase Widget 已準備就緒，可接收訊息");
+        } else {
+          console.warn("⚠️ Chatbase Widget 尚未初始化，再次嘗試...");
+          loadChatbase(); // 重試
+        }
+      }, 1500);
+    };
+
+    script.onerror = (e) => {
+      console.error("❌ Chatbase 載入失敗：", e);
+    };
+
     document.body.appendChild(script);
   }
 
   // ✅ DOM ready 後載入
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadChatbase);
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(loadChatbase, 300);
+    });
   } else {
-    loadChatbase();
+    setTimeout(loadChatbase, 300);
   }
 
-  // ✅ 監聽初始化事件
+  // ✅ 額外監聽 chatbase:ready 事件（若 SDK 支援）
   window.addEventListener("chatbase:ready", function () {
-    console.log("✅ Chatbase Widget 已準備就緒，可接收訊息");
+    console.log("🎉 Chatbase Widget 已完全啟動");
   });
-
-  // ✅ 若 3 秒內未啟動，自動重試一次
-  setTimeout(() => {
-    if (!window.ChatbaseWidget) {
-      console.warn("⚠️ Chatbase Widget 尚未初始化，嘗試重新載入...");
-      loadChatbase();
-    }
-  }, 3000);
 })();
