@@ -14,7 +14,7 @@
       const res = await fetch("https://www.chatbase.co/api/v1/chat", {
         method: "POST",
         headers: {
-          "Authorization": "15a8ad9c-b7b8-4a92-827c-b4a661d62895", // ← 這裡換成你的 API Key
+          "Authorization": "Bearer 15a8ad9c-b7b8-4a92-827c-b4a661d62895", // ← 這裡換成你的 API Key
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
