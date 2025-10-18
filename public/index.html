@@ -7,7 +7,6 @@
   <!-- 自訂樣式 -->
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="Decoration.css">
-  <link rel="stylesheet" href="Chatbox.css">
 </head>
 <body>
 <div class="container">
@@ -601,15 +600,12 @@
 
   </div>
 </div>
-<!-- 🧠 Chatbase 自訂對話框 -->
-<div id="chatbox-container">
-  <div id="chatbox-header">理財助理 💬</div>
-  <div id="chatbox-messages"></div>
-  <div id="chatbox-input-area">
-    <input id="chatbox-input" type="text" placeholder="輸入訊息..." />
-    <button id="chatbox-send">送出</button>
-  </div>
-<script src="Chatbox.js"></script>
+
+<script>
+(function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="zU41hSWsbfHyI-xOQMIKE";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
+</script>
+
+<script src="Chatbase.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
